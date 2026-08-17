@@ -78,6 +78,8 @@ export const roles = [
 ] as const;
 
 export const roleRequirements = [
+  // Data are in format of [roleSlug, skillSlug, importance]
+
   // Junior Frontend Developer
   ['junior-frontend-developer', 'html', 5],
   ['junior-frontend-developer', 'css', 5],
@@ -542,6 +544,8 @@ export const skills = [
 ] as const;
 
 export const prerequisites = [
+  // Data are in format of [sourceSkill, targetSkill]
+
   ['html', 'web-accessibility'],
   ['html', 'react'],
 
@@ -582,6 +586,7 @@ export const prerequisites = [
 ] as const;
 
 export const relatedSkills = [
+  // Data are in format of [sourceSkill, targetSkill]
   ['react', 'nextjs'],
   ['react', 'redux'],
   ['react', 'zustand'],
