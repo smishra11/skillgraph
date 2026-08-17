@@ -2,11 +2,11 @@
 
 import { useEffect, useState } from 'react';
 
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-
+import type { SkillGapAnalysis } from '@/components/analysis-results';
 import { RoleSelector } from '@/components/role-selector';
 import { SkillSelector } from '@/components/skill-selector';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
 
 type Role = {
   id: string;
@@ -25,7 +25,11 @@ type Skill = {
   description: string;
 };
 
-export function AnalysisForm() {
+type AnalysisFormProps = {
+  onAnalysisChange: (analysis: SkillGapAnalysis | null) => void;
+};
+
+export function AnalysisForm({ onAnalysisChange }: AnalysisFormProps) {
   const [roles, setRoles] = useState<Role[]>([]);
   const [skills, setSkills] = useState<Skill[]>([]);
 
@@ -34,6 +38,9 @@ export function AnalysisForm() {
 
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
+
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [analysisError, setAnalysisError] = useState('');
 
   useEffect(() => {
     async function loadData() {
@@ -67,14 +74,58 @@ export function AnalysisForm() {
     loadData();
   }, []);
 
-  function handleAnalyze() {
-    console.log({
-      roleSlug: selectedRole,
-      selectedSkillSlugs: selectedSkills,
-    });
+  async function handleAnalyze() {
+    if (!selectedRole || selectedSkills.length === 0) {
+      return;
+    }
+
+    try {
+      setIsAnalyzing(true);
+      setAnalysisError('');
+
+      const response = await fetch('/api/analyze', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          roleSlug: selectedRole,
+          selectedSkillSlugs: selectedSkills,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error ?? 'Unable to analyze skill gap.');
+      }
+
+      onAnalysisChange(result.data);
+    } catch (error) {
+      onAnalysisChange(null);
+
+      setAnalysisError(
+        error instanceof Error ? error.message : 'Unable to analyze skill gap.',
+      );
+    } finally {
+      setIsAnalyzing(false);
+    }
   }
 
-  const canAnalyze = selectedRole.length > 0 && selectedSkills.length > 0;
+  function handleRoleChange(value: string) {
+    setSelectedRole(value);
+    setAnalysisError('');
+    onAnalysisChange(null);
+  }
+
+  function handleSkillsChange(value: string[]) {
+    setSelectedSkills(value);
+    setAnalysisError('');
+    onAnalysisChange(null);
+  }
+
+  const canAnalyze =
+    selectedRole.length > 0 && selectedSkills.length > 0 && !isAnalyzing;
 
   return (
     <Card className='border-zinc-200 bg-white shadow-sm'>
@@ -92,14 +143,20 @@ export function AnalysisForm() {
             <SkillSelector
               skills={skills}
               selectedSkills={selectedSkills}
-              onChange={setSelectedSkills}
+              onChange={handleSkillsChange}
             />
 
             <RoleSelector
               roles={roles}
               value={selectedRole}
-              onChange={setSelectedRole}
+              onChange={handleRoleChange}
             />
+
+            {analysisError && (
+              <div className='rounded-lg border border-red-200 bg-red-50 px-4 py-3'>
+                <p className='text-sm text-red-700'>{analysisError}</p>
+              </div>
+            )}
 
             <Button
               type='button'
@@ -107,7 +164,11 @@ export function AnalysisForm() {
               disabled={isLoading || !canAnalyze}
               onClick={handleAnalyze}
             >
-              {isLoading ? 'Loading SkillGraph...' : 'Analyze skill gap'}
+              {isLoading
+                ? 'Loading SkillGraph...'
+                : isAnalyzing
+                  ? 'Analyzing your skills...'
+                  : 'Analyze skill gap'}
             </Button>
           </>
         )}
