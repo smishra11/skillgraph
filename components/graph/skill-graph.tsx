@@ -137,10 +137,10 @@ export function SkillGraph({
   }
 
   return (
-    <div className='overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-[0_14px_38px_-28px_rgba(24,24,27,0.40)]'>
+    <div className='overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-[0_14px_38px_-28px_rgba(24,24,27,0.40)] sm:rounded-2xl'>
       {/* Graph toolbar */}
-      <div className='flex flex-col gap-3 border-b border-zinc-100 bg-white px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between'>
-        <div className='flex flex-wrap items-center gap-x-4 gap-y-2'>
+      <div className='flex flex-col gap-2.5 border-b border-zinc-100 bg-white px-3.5 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-3 sm:px-4 sm:py-3.5'>
+        <div className='flex flex-wrap items-center gap-x-3 gap-y-1.5 sm:gap-x-4 sm:gap-y-2'>
           <LegendItem type='known' label='Known skill' />
 
           <LegendItem type='bridge' label='Learning path' />
@@ -148,14 +148,14 @@ export function SkillGraph({
           <LegendItem type='missing' label='Skill to develop' />
         </div>
 
-        <div className='flex items-center gap-1.5 text-[10px] font-medium text-zinc-400'>
-          <Network className='size-3' />
+        <div className='hidden items-center gap-1.5 text-[10px] font-medium text-zinc-400 sm:flex'>
+          <Network className='size-3 shrink-0' />
           Click a node to explore connections
         </div>
       </div>
 
       {/* Flow canvas */}
-      <div className='relative h85 w-full bg-[#fcfcfd] sm:h-102.5 lg:h-122.5'>
+      <div className='relative h-75 w-full bg-[#fcfcfd] sm:h-95 md:h-105 lg:h-120'>
         <ReactFlow
           nodes={displayNodes}
           edges={displayEdges}
@@ -204,7 +204,7 @@ export function SkillGraph({
 
         {/* Canvas helper */}
         {!selectedNodeId && (
-          <div className='pointer-events-none absolute right-3 top-3 hidden rounded-lg border border-zinc-200 bg-white/90 px-2.5 py-1.5 text-[10px] font-medium text-zinc-400 shadow-sm backdrop-blur-sm sm:block'>
+          <div className='pointer-events-none absolute right-3 top-3 hidden rounded-lg border border-zinc-200 bg-white/90 px-2.5 py-1.5 text-[10px] font-medium text-zinc-400 shadow-sm backdrop-blur-sm md:block'>
             Drag nodes · Scroll to zoom
           </div>
         )}
@@ -366,9 +366,11 @@ function LegendItem({ type, label }: LegendItemProps) {
 
   return (
     <div className='flex items-center gap-1.5'>
-      <span className={`size-2 rounded-full ${styles[type].dot}`} />
+      <span className={`size-2 shrink-0 rounded-full ${styles[type].dot}`} />
 
-      <span className={`text-[10px] font-semibold ${styles[type].text}`}>
+      <span
+        className={`text-[9px] font-semibold whitespace-nowrap sm:text-[10px] ${styles[type].text}`}
+      >
         {label}
       </span>
     </div>
@@ -402,27 +404,29 @@ function SelectedNodeDetails({ node, onClose }: SelectedNodeDetailsProps) {
   };
 
   return (
-    <div className='flex items-start justify-between gap-4 border-t border-zinc-100 bg-zinc-50/70 px-4 py-3'>
+    <div className='flex items-start justify-between gap-3 border-t border-zinc-100 bg-zinc-50/70 px-3.5 py-2.5 sm:gap-4 sm:px-4 sm:py-3'>
       <div className='min-w-0'>
-        <div className='flex flex-wrap items-center gap-2'>
-          <p className='text-sm font-semibold text-zinc-900'>{data.name}</p>
+        <div className='flex flex-wrap items-center gap-1.5 sm:gap-2'>
+          <p className='truncate text-sm font-semibold text-zinc-900'>
+            {data.name}
+          </p>
 
           <span
-            className={`rounded-full border px-2 py-0.5 text-[9px] font-semibold ${statusStyles[data.status]}`}
+            className={`shrink-0 rounded-full border px-2 py-0.5 text-[9px] font-semibold ${statusStyles[data.status]}`}
           >
             {statusLabels[data.status]}
           </span>
         </div>
 
-        <div className='mt-1 flex flex-wrap items-center gap-1.5 text-[11px] text-zinc-500'>
-          <span>{data.category}</span>
+        <div className='mt-1 flex min-w-0 flex-wrap items-center gap-1.5 text-[10px] text-zinc-500 sm:text-[11px]'>
+          <span className='truncate'>{data.category}</span>
 
-          <span className='text-zinc-300'>•</span>
+          <span className='shrink-0 text-zinc-300'>•</span>
 
-          <span className='capitalize'>{data.level}</span>
+          <span className='shrink-0 capitalize'>{data.level}</span>
         </div>
 
-        <p className='mt-1.5 text-[11px] leading-5 text-zinc-400'>
+        <p className='mt-1.5 line-clamp-2 text-[10px] leading-4 text-zinc-400 sm:text-[11px] sm:leading-5'>
           Select connected nodes to explore the prerequisite relationship.
         </p>
       </div>
@@ -445,18 +449,18 @@ function SelectedNodeDetails({ node, onClose }: SelectedNodeDetailsProps) {
 
 function GraphEmptyState() {
   return (
-    <div className='relative overflow-hidden rounded-2xl border border-zinc-200 bg-white px-5 py-10 text-center shadow-[0_10px_30px_-24px_rgba(24,24,27,0.35)] sm:px-8'>
+    <div className='relative overflow-hidden rounded-xl border border-zinc-200 bg-white px-4 py-7 text-center shadow-[0_10px_30px_-24px_rgba(24,24,27,0.35)] sm:rounded-2xl sm:px-6 sm:py-8 lg:px-8 lg:py-10'>
       <div
         aria-hidden='true'
-        className='absolute left-1/2 top-0 size-44 -translate-x-1/2 -translate-y-1/2 rounded-full bg-indigo-50 blur-3xl'
+        className='absolute left-1/2 top-0 size-36 -translate-x-1/2 -translate-y-1/2 rounded-full bg-indigo-50 blur-3xl sm:size-44'
       />
 
       <div className='relative'>
-        <div className='mx-auto flex size-11 items-center justify-center rounded-xl border border-indigo-100 bg-indigo-50 shadow-sm'>
-          <Route className='size-5 text-indigo-600' />
+        <div className='mx-auto flex size-10 items-center justify-center rounded-xl border border-indigo-100 bg-indigo-50 shadow-sm sm:size-11'>
+          <Route className='size-4.5 text-indigo-600 sm:size-5' />
         </div>
 
-        <h4 className='mt-4 text-sm font-semibold text-zinc-900'>
+        <h4 className='mt-3.5 text-sm font-semibold text-zinc-900 sm:mt-4'>
           No additional learning path needed
         </h4>
 
@@ -466,7 +470,7 @@ function GraphEmptyState() {
           cover the relevant skills for this role.
         </p>
 
-        <div className='mt-5 flex flex-wrap items-center justify-center gap-3 text-[10px] font-medium text-zinc-400'>
+        <div className='mt-4 flex flex-wrap items-center justify-center gap-2.5 text-[9px] font-medium text-zinc-400 sm:mt-5 sm:gap-3 sm:text-[10px]'>
           <span className='inline-flex items-center gap-1.5'>
             <CheckCircle2 className='size-3 text-emerald-500' />
             Known

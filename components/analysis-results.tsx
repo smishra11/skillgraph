@@ -37,7 +37,7 @@ export function AnalysisResults({ analysis }: AnalysisResultsProps) {
   return (
     <div>
       {/* Role overview */}
-      <div className='flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between'>
+      <div className='flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between sm:gap-5'>
         <div className='min-w-0'>
           <div className='flex flex-wrap items-center gap-2'>
             <span className='inline-flex items-center gap-1.5 rounded-full border border-indigo-100 bg-indigo-50 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-indigo-700'>
@@ -50,18 +50,18 @@ export function AnalysisResults({ analysis }: AnalysisResultsProps) {
             </span>
           </div>
 
-          <h2 className='mt-3 text-2xl font-semibold tracking-tight text-zinc-950 sm:text-[1.7rem]'>
+          <h2 className='mt-3 text-xl font-semibold tracking-tight text-zinc-950 sm:text-2xl lg:text-[1.7rem]'>
             {role.name}
           </h2>
 
-          <p className='mt-2 max-w-2xl text-sm leading-6 text-zinc-500'>
+          <p className='mt-1.5 max-w-2xl text-sm leading-6 text-zinc-500 sm:mt-2'>
             {role.description}
           </p>
         </div>
 
         <div className='shrink-0'>
           <span
-            className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold ${
+            className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1.5 text-[11px] font-semibold sm:px-3 sm:text-xs ${
               isFullyCovered
                 ? 'border-emerald-100 bg-emerald-50 text-emerald-700'
                 : 'border-indigo-100 bg-indigo-50 text-indigo-700'
@@ -79,45 +79,45 @@ export function AnalysisResults({ analysis }: AnalysisResultsProps) {
       </div>
 
       {/* Score section */}
-      <div className='mt-7 overflow-hidden rounded-2xl border border-zinc-200 bg-zinc-50/60'>
+      <div className='mt-6 overflow-hidden rounded-xl border border-zinc-200 bg-zinc-50/60 sm:mt-7 sm:rounded-2xl'>
         <div className='grid lg:grid-cols-[1.25fr_0.75fr]'>
           {/* Match score */}
-          <div className='border-b border-zinc-200 p-5 sm:p-6 lg:border-r lg:border-b-0'>
+          <div className='border-b border-zinc-200 p-4 sm:p-5 lg:border-r lg:border-b-0'>
             <div className='flex items-start justify-between gap-4'>
-              <div>
+              <div className='min-w-0'>
                 <div className='flex items-center gap-2'>
-                  <div className='flex size-8 items-center justify-center rounded-lg border border-indigo-100 bg-indigo-50'>
+                  <div className='flex size-8 shrink-0 items-center justify-center rounded-lg border border-indigo-100 bg-indigo-50'>
                     <Gauge className='size-4 text-indigo-600' />
                   </div>
 
-                  <p className='text-xs font-semibold uppercase tracking-[0.14em] text-zinc-500'>
+                  <p className='text-[11px] font-semibold uppercase tracking-[0.14em] text-zinc-500 sm:text-xs'>
                     Role match
                   </p>
                 </div>
 
-                <div className='mt-5 flex items-end gap-2'>
+                <div className='mt-4 flex items-end gap-2 sm:mt-5'>
                   <span className='text-5xl font-semibold tracking-[-0.055em] text-zinc-950 sm:text-6xl'>
                     {matchPercentage}
                   </span>
 
-                  <span className='mb-1.5 text-xl font-medium text-zinc-400'>
+                  <span className='mb-1.5 text-lg font-medium text-zinc-400 sm:text-xl'>
                     %
                   </span>
                 </div>
 
-                <p className='mt-2 text-sm text-zinc-500'>
+                <p className='mt-1.5 text-sm leading-5 text-zinc-500 sm:mt-2'>
                   Weighted readiness for this role
                 </p>
               </div>
 
-              <div className='hidden size-14 items-center justify-center rounded-2xl border border-indigo-100 bg-white shadow-[0_10px_25px_-16px_rgba(79,70,229,0.35)] sm:flex'>
-                <Award className='size-6 text-indigo-600' />
+              <div className='hidden size-12 shrink-0 items-center justify-center rounded-2xl border border-indigo-100 bg-white shadow-[0_10px_25px_-16px_rgba(79,70,229,0.35)] sm:flex lg:size-14'>
+                <Award className='size-5 text-indigo-600 lg:size-6' />
               </div>
             </div>
 
             {/* Progress */}
-            <div className='mt-6'>
-              <div className='h-2.5 overflow-hidden rounded-full bg-zinc-200/80'>
+            <div className='mt-5 sm:mt-6'>
+              <div className='h-2 overflow-hidden rounded-full bg-zinc-200/80 sm:h-2.5'>
                 <div
                   className='h-full rounded-full bg-linear-to-r from-indigo-500 to-violet-500 transition-[width] duration-700 ease-out'
                   style={{
@@ -126,31 +126,31 @@ export function AnalysisResults({ analysis }: AnalysisResultsProps) {
                 />
               </div>
 
-              <div className='mt-2 flex items-center justify-between text-[11px] text-zinc-400'>
-                <span>0%</span>
+              <div className='mt-2 flex items-center justify-between gap-2 text-[10px] text-zinc-400 sm:text-[11px]'>
+                <span className='shrink-0'>0%</span>
 
-                <span className='font-medium text-zinc-500'>
+                <span className='min-w-0 truncate text-center font-medium text-zinc-500'>
                   {matchedWeight} / {totalWeight} weighted points
                 </span>
 
-                <span>100%</span>
+                <span className='shrink-0'>100%</span>
               </div>
             </div>
           </div>
 
           {/* Requirement coverage */}
-          <div className='p-5 sm:p-6'>
+          <div className='p-4 sm:p-5'>
             <div className='flex items-center gap-2'>
-              <div className='flex size-8 items-center justify-center rounded-lg border border-emerald-100 bg-emerald-50'>
+              <div className='flex size-8 shrink-0 items-center justify-center rounded-lg border border-emerald-100 bg-emerald-50'>
                 <CheckCircle2 className='size-4 text-emerald-600' />
               </div>
 
-              <p className='text-xs font-semibold uppercase tracking-[0.14em] text-zinc-500'>
+              <p className='text-[11px] font-semibold uppercase tracking-[0.14em] text-zinc-500 sm:text-xs'>
                 Requirement coverage
               </p>
             </div>
 
-            <div className='mt-5 flex items-end gap-2'>
+            <div className='mt-4 flex items-end gap-2 sm:mt-5'>
               <span className='text-4xl font-semibold tracking-[-0.045em] text-zinc-950'>
                 {coveredRequirements}
               </span>
@@ -160,18 +160,18 @@ export function AnalysisResults({ analysis }: AnalysisResultsProps) {
               </span>
             </div>
 
-            <p className='mt-2 text-sm text-zinc-500'>
+            <p className='mt-1.5 text-sm leading-5 text-zinc-500 sm:mt-2'>
               Required skills already covered
             </p>
 
-            <div className='mt-5 flex flex-wrap gap-2'>
-              <span className='inline-flex items-center gap-1.5 rounded-full border border-emerald-100 bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold text-emerald-700'>
+            <div className='mt-4 flex flex-wrap gap-2 sm:mt-5'>
+              <span className='inline-flex items-center gap-1.5 rounded-full border border-emerald-100 bg-emerald-50 px-2.5 py-1 text-[10px] font-semibold text-emerald-700 sm:text-[11px]'>
                 <Check className='size-3' />
                 {matchedSkills.length} matched
               </span>
 
               <span
-                className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-semibold ${
+                className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-semibold sm:text-[11px] ${
                   isFullyCovered
                     ? 'border-emerald-100 bg-emerald-50 text-emerald-700'
                     : 'border-amber-100 bg-amber-50 text-amber-700'
@@ -193,24 +193,23 @@ export function AnalysisResults({ analysis }: AnalysisResultsProps) {
       </div>
 
       {/* Skill coverage */}
-      <div className='mt-8'>
+      <div className='mt-7 sm:mt-8'>
         <div>
-          <p className='text-xs font-semibold uppercase tracking-[0.14em] text-zinc-400'>
+          <p className='text-[11px] font-semibold uppercase tracking-[0.14em] text-zinc-400 sm:text-xs'>
             Skill coverage
           </p>
 
-          <h3 className='mt-1.5 text-lg font-semibold tracking-tight text-zinc-950'>
+          <h3 className='mt-1.5 text-base font-semibold tracking-tight text-zinc-950 sm:text-lg'>
             How your skills compare
           </h3>
 
-          <p className='mt-1 text-sm text-zinc-500'>
+          <p className='mt-1 text-sm leading-6 text-zinc-500'>
             Required skills are grouped by what you already cover and what you
             still need to develop.
           </p>
         </div>
 
-        <div className='mt-5 grid gap-4 xl:grid-cols-2'>
-          {/* Matched */}
+        <div className='mt-4 grid gap-3 sm:mt-5 sm:gap-4 lg:grid-cols-2'>
           <SkillCoverageSection
             type='matched'
             title='Skills you already have'
@@ -218,7 +217,6 @@ export function AnalysisResults({ analysis }: AnalysisResultsProps) {
             items={matchedSkills}
           />
 
-          {/* Missing */}
           <SkillCoverageSection
             type='missing'
             title='Skills to develop'
@@ -247,12 +245,12 @@ function SkillCoverageSection({
   const isMatched = type === 'matched';
 
   return (
-    <section className='overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-[0_10px_28px_-22px_rgba(24,24,27,0.35)]'>
+    <section className='overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-[0_10px_28px_-22px_rgba(24,24,27,0.35)] sm:rounded-2xl'>
       {/* Header */}
-      <div className='border-b border-zinc-100 px-4 py-4 sm:px-5'>
-        <div className='flex items-start gap-3'>
+      <div className='border-b border-zinc-100 px-3.5 py-3.5 sm:px-4 sm:py-4'>
+        <div className='flex items-start gap-2.5 sm:gap-3'>
           <div
-            className={`flex size-9 shrink-0 items-center justify-center rounded-xl border ${
+            className={`flex size-8 shrink-0 items-center justify-center rounded-lg border sm:size-9 sm:rounded-xl ${
               isMatched
                 ? 'border-emerald-100 bg-emerald-50'
                 : 'border-amber-100 bg-amber-50'
@@ -290,19 +288,19 @@ function SkillCoverageSection({
       </div>
 
       {/* Content */}
-      <div className='p-4 sm:p-5'>
+      <div className='p-3.5 sm:p-4'>
         {items.length > 0 ? (
           <div className='space-y-2'>
             {items.map(({ skill, importance }) => (
               <div
                 key={skill.id}
-                className={`group flex items-center justify-between gap-3 rounded-xl border px-3.5 py-3 transition-all duration-200 ${
+                className={`group flex items-center justify-between gap-2.5 rounded-lg border px-3 py-2.5 transition-all duration-200 sm:gap-3 sm:rounded-xl sm:px-3.5 sm:py-3 ${
                   isMatched
                     ? 'border-emerald-100/80 bg-emerald-50/40 hover:border-emerald-200 hover:bg-emerald-50/70'
                     : 'border-amber-100/80 bg-amber-50/40 hover:border-amber-200 hover:bg-amber-50/70'
                 }`}
               >
-                <div className='flex min-w-0 items-center gap-3'>
+                <div className='flex min-w-0 items-center gap-2.5 sm:gap-3'>
                   <span
                     className={`size-2 shrink-0 rounded-full ${
                       isMatched ? 'bg-emerald-500' : 'bg-amber-500'
@@ -314,10 +312,10 @@ function SkillCoverageSection({
                       {skill.name}
                     </p>
 
-                    <div className='mt-0.5 flex min-w-0 items-center gap-1.5 text-[11px] text-zinc-500'>
+                    <div className='mt-0.5 flex min-w-0 items-center gap-1.5 text-[10px] text-zinc-500 sm:text-[11px]'>
                       <span className='truncate'>{skill.category}</span>
 
-                      <span className='text-zinc-300'>•</span>
+                      <span className='shrink-0 text-zinc-300'>•</span>
 
                       <span className='shrink-0 capitalize'>{skill.level}</span>
                     </div>
@@ -325,7 +323,7 @@ function SkillCoverageSection({
                 </div>
 
                 <span
-                  className={`shrink-0 rounded-full border bg-white px-2 py-1 text-[10px] font-semibold ${
+                  className={`shrink-0 rounded-full border bg-white px-1.5 py-1 text-[9px] font-semibold sm:px-2 sm:text-[10px] ${
                     importance === 5
                       ? 'border-indigo-100 text-indigo-700'
                       : 'border-zinc-200 text-zinc-500'
@@ -337,7 +335,7 @@ function SkillCoverageSection({
             ))}
           </div>
         ) : isMatched ? (
-          <div className='rounded-xl border border-dashed border-zinc-200 bg-zinc-50/60 p-4'>
+          <div className='rounded-lg border border-dashed border-zinc-200 bg-zinc-50/60 p-3.5 sm:rounded-xl sm:p-4'>
             <p className='text-sm font-semibold text-zinc-700'>
               No matching skills yet
             </p>
@@ -348,13 +346,13 @@ function SkillCoverageSection({
             </p>
           </div>
         ) : (
-          <div className='rounded-xl border border-dashed border-emerald-200 bg-emerald-50/60 p-4'>
-            <div className='flex items-start gap-3'>
+          <div className='rounded-lg border border-dashed border-emerald-200 bg-emerald-50/60 p-3.5 sm:rounded-xl sm:p-4'>
+            <div className='flex items-start gap-2.5 sm:gap-3'>
               <div className='flex size-8 shrink-0 items-center justify-center rounded-lg bg-white shadow-sm'>
                 <CheckCircle2 className='size-4 text-emerald-600' />
               </div>
 
-              <div>
+              <div className='min-w-0'>
                 <p className='text-sm font-semibold text-emerald-800'>
                   You&apos;ve covered all required skills
                 </p>
