@@ -202,29 +202,43 @@ export function AnalysisResults({ analysis }: AnalysisResultsProps) {
             </div>
 
             <div className='mt-4 space-y-2'>
-              {analysis.missingSkills.map(({ skill, importance }) => (
-                <div
-                  key={skill.id}
-                  className='flex items-center justify-between gap-3 rounded-lg border border-amber-100 bg-amber-50/50 px-3 py-2.5'
-                >
-                  <div className='min-w-0'>
-                    <p className='truncate text-sm font-medium text-zinc-900'>
-                      {skill.name}
-                    </p>
+              {analysis.missingSkills.length > 0 ? (
+                <div className='mt-4 space-y-2'>
+                  {analysis.missingSkills.map(({ skill, importance }) => (
+                    <div
+                      key={skill.id}
+                      className='flex items-center justify-between gap-3 rounded-lg border border-amber-100 bg-amber-50/50 px-3 py-2.5'
+                    >
+                      <div className='min-w-0'>
+                        <p className='truncate text-sm font-medium text-zinc-900'>
+                          {skill.name}
+                        </p>
 
-                    <p className='truncate text-xs text-zinc-500'>
-                      {skill.category}
-                    </p>
-                  </div>
+                        <p className='truncate text-xs text-zinc-500'>
+                          {skill.category}
+                        </p>
+                      </div>
 
-                  <Badge
-                    variant='secondary'
-                    className='shrink-0 bg-white text-[10px] sm:text-xs'
-                  >
-                    {getImportanceLabel(importance)}
-                  </Badge>
+                      <Badge
+                        variant='secondary'
+                        className='shrink-0 bg-white text-[10px] sm:text-xs'
+                      >
+                        {getImportanceLabel(importance)}
+                      </Badge>
+                    </div>
+                  ))}
                 </div>
-              ))}
+              ) : (
+                <div className='mt-4 rounded-lg border border-dashed border-emerald-200 bg-emerald-50/50 p-4'>
+                  <p className='text-sm font-medium text-emerald-800'>
+                    You&apos;ve covered all required skills
+                  </p>
+
+                  <p className='mt-1 text-xs leading-5 text-emerald-700'>
+                    Your selected skills satisfy all requirements for this role.
+                  </p>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
