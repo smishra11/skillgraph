@@ -7,6 +7,7 @@ import { RoleSelector } from '@/components/role-selector';
 import { SkillSelector } from '@/components/skill-selector';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import type { LearningPath } from '@/components/graph/skill-graph';
 
 type Role = {
   id: string;
@@ -25,8 +26,15 @@ type Skill = {
   description: string;
 };
 
+export type SkillGraphResult = {
+  analysis: SkillGapAnalysis;
+  learningPaths: LearningPath[];
+  selectedSkillSlugs: string[];
+  graphError: string;
+};
+
 type AnalysisFormProps = {
-  onAnalysisChange: (analysis: SkillGapAnalysis | null) => void;
+  onAnalysisChange: (result: SkillGraphResult | null) => void;
 };
 
 export function AnalysisForm({ onAnalysisChange }: AnalysisFormProps) {
@@ -82,25 +90,55 @@ export function AnalysisForm({ onAnalysisChange }: AnalysisFormProps) {
     try {
       setIsAnalyzing(true);
       setAnalysisError('');
+      onAnalysisChange(null);
 
-      const response = await fetch('/api/analyze', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          roleSlug: selectedRole,
-          selectedSkillSlugs: selectedSkills,
+      const requestBody = {
+        roleSlug: selectedRole,
+        selectedSkillSlugs: selectedSkills,
+      };
+
+      const [analysisResponse, learningPathsResponse] = await Promise.all([
+        fetch('/api/analyze', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(requestBody),
         }),
-      });
 
-      const result = await response.json();
+        fetch('/api/learning-paths', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(requestBody),
+        }),
+      ]);
 
-      if (!response.ok) {
-        throw new Error(result.error ?? 'Unable to analyze skill gap.');
+      const analysisResult = await analysisResponse.json();
+
+      if (!analysisResponse.ok) {
+        throw new Error(analysisResult.error ?? 'Unable to analyze skill gap.');
       }
 
-      onAnalysisChange(result.data);
+      let learningPaths: LearningPath[] = [];
+      let graphError = '';
+
+      if (learningPathsResponse.ok) {
+        const learningPathsResult = await learningPathsResponse.json();
+
+        learningPaths = learningPathsResult.data;
+      } else {
+        graphError =
+          'Your skill analysis is available, but the learning graph could not be loaded.';
+      }
+
+      onAnalysisChange({
+        analysis: analysisResult.data,
+        learningPaths,
+        selectedSkillSlugs: [...selectedSkills],
+        graphError,
+      });
     } catch (error) {
       onAnalysisChange(null);
 

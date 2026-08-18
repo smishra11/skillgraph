@@ -3,13 +3,17 @@
 import { useState } from 'react';
 
 import {
-  AnalysisResults,
-  type SkillGapAnalysis,
-} from '@/components/analysis-results';
-import { AnalysisForm } from '@/components/analysis-form';
+  AnalysisForm,
+  type SkillGraphResult,
+} from '@/components/analysis-form';
+import { AnalysisResults } from '@/components/analysis-results';
+import { SkillGraph } from '@/components/graph/skill-graph';
 
 export function SkillGraphAnalyzer() {
-  const [analysis, setAnalysis] = useState<SkillGapAnalysis | null>(null);
+  const [result, setResult] = useState<SkillGraphResult | null>(null);
+
+  const missingSkillSlugs =
+    result?.analysis.missingSkills.map(({ skill }) => skill.slug) ?? [];
 
   return (
     <section className='py-16 lg:py-24'>
@@ -35,12 +39,29 @@ export function SkillGraphAnalyzer() {
           </div>
         </div>
 
-        <AnalysisForm onAnalysisChange={setAnalysis} />
+        <AnalysisForm onAnalysisChange={setResult} />
       </div>
 
-      {analysis && (
-        <div className='mt-12 border-t border-zinc-200 pt-10'>
-          <AnalysisResults analysis={analysis} />
+      {result && (
+        <div className='mt-12 space-y-6 border-t border-zinc-200 pt-10'>
+          <AnalysisResults analysis={result.analysis} />
+
+          {result.graphError ? (
+            <div className='rounded-xl border border-red-200 bg-red-50 p-4'>
+              <p className='text-sm font-medium text-red-900'>
+                Learning graph unavailable
+              </p>
+
+              <p className='mt-1 text-sm text-red-700'>{result.graphError}</p>
+            </div>
+          ) : (
+            <SkillGraph
+              key={`${result.analysis.role.slug}-${result.selectedSkillSlugs.join('-')}`}
+              learningPaths={result.learningPaths}
+              selectedSkillSlugs={result.selectedSkillSlugs}
+              missingSkillSlugs={missingSkillSlugs}
+            />
+          )}
         </div>
       )}
     </section>

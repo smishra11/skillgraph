@@ -37,10 +37,10 @@ export type SkillGapAnalysis = {
 };
 
 export type LearningPath = {
-  fromSkill: string;
-  toSkill: string;
+  fromSkill: Skill;
+  toSkill: Skill;
   hops: number;
-  path: string[];
+  path: Skill[];
 };
 
 export async function getRoles(): Promise<Role[]> {
@@ -248,12 +248,30 @@ export async function getLearningPaths(
       WHERE knownSkill.slug IN $selectedSkillSlugs
 
       RETURN
-        knownSkill.name AS fromSkill,
-        missingSkill.name AS toSkill,
-        length(path) AS hops,
-        [node IN nodes(path) | node.name] AS path
+        knownSkill.id AS fromSkillId,
+        knownSkill.name AS fromSkillName,
+        knownSkill.slug AS fromSkillSlug,
+        knownSkill.category AS fromSkillCategory,
+        knownSkill.level AS fromSkillLevel,
+        knownSkill.description AS fromSkillDescription,
 
-      ORDER BY hops ASC, toSkill ASC
+        missingSkill.id AS toSkillId,
+        missingSkill.name AS toSkillName,
+        missingSkill.slug AS toSkillSlug,
+        missingSkill.category AS toSkillCategory,
+        missingSkill.level AS toSkillLevel,
+        missingSkill.description AS toSkillDescription,
+
+        length(path) AS hops,
+
+        [node IN nodes(path) | node.id] AS pathIds,
+        [node IN nodes(path) | node.name] AS pathNames,
+        [node IN nodes(path) | node.slug] AS pathSlugs,
+        [node IN nodes(path) | node.category] AS pathCategories,
+        [node IN nodes(path) | node.level] AS pathLevels,
+        [node IN nodes(path) | node.description] AS pathDescriptions
+
+      ORDER BY hops ASC, toSkillName ASC
     `,
     {
       roleSlug,
@@ -261,10 +279,42 @@ export async function getLearningPaths(
     },
   );
 
-  return result.records.map((record) => ({
-    fromSkill: record.get('fromSkill'),
-    toSkill: record.get('toSkill'),
-    hops: Number(record.get('hops')),
-    path: record.get('path'),
-  }));
+  return result.records.map((record) => {
+    const pathIds = record.get('pathIds') as string[];
+    const pathNames = record.get('pathNames') as string[];
+    const pathSlugs = record.get('pathSlugs') as string[];
+    const pathCategories = record.get('pathCategories') as string[];
+    const pathLevels = record.get('pathLevels') as string[];
+    const pathDescriptions = record.get('pathDescriptions') as string[];
+
+    const path: Skill[] = pathIds.map((id, index) => ({
+      id,
+      name: pathNames[index],
+      slug: pathSlugs[index],
+      category: pathCategories[index],
+      level: pathLevels[index],
+      description: pathDescriptions[index],
+    }));
+
+    return {
+      fromSkill: {
+        id: record.get('fromSkillId'),
+        name: record.get('fromSkillName'),
+        slug: record.get('fromSkillSlug'),
+        category: record.get('fromSkillCategory'),
+        level: record.get('fromSkillLevel'),
+        description: record.get('fromSkillDescription'),
+      },
+      toSkill: {
+        id: record.get('toSkillId'),
+        name: record.get('toSkillName'),
+        slug: record.get('toSkillSlug'),
+        category: record.get('toSkillCategory'),
+        level: record.get('toSkillLevel'),
+        description: record.get('toSkillDescription'),
+      },
+      hops: Number(record.get('hops')),
+      path,
+    };
+  });
 }
