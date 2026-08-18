@@ -8,10 +8,10 @@ export async function GET() {
 
     return NextResponse.json({ data: skills });
   } catch (error) {
-    console.error('Failed to fetch skills:', error);
+    console.error('Failed to load skills:', error);
 
     return NextResponse.json(
-      { error: 'Unable to load skills.' },
+      { error: 'SkillGraph is temporarily unable to connect to the database.' },
       { status: 503 },
     );
   }

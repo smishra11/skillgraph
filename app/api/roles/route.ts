@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+
 import { getRoles } from '@/lib/db/queries';
 
 export async function GET() {
@@ -7,10 +8,10 @@ export async function GET() {
 
     return NextResponse.json({ data: roles });
   } catch (error) {
-    console.error('Failed to fetch roles:', error);
+    console.error('Failed to load roles:', error);
 
     return NextResponse.json(
-      { error: 'Unable to load roles.' },
+      { error: 'SkillGraph is temporarily unable to connect to the database.' },
       { status: 503 },
     );
   }

@@ -2,18 +2,22 @@ import { NextResponse } from 'next/server';
 
 import { getLearningPaths } from '@/lib/db/queries';
 
-type LearningPathsRequestBody = {
-  roleSlug?: string;
-  selectedSkillSlugs?: string[];
-};
-
 export async function POST(request: Request) {
-  try {
-    const body = (await request.json()) as LearningPathsRequestBody;
+  let body;
 
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json(
+      { error: 'Invalid request body.' },
+      { status: 400 },
+    );
+  }
+
+  try {
     const { roleSlug, selectedSkillSlugs } = body;
 
-    if (!roleSlug) {
+    if (typeof roleSlug !== 'string' || roleSlug.trim().length === 0) {
       return NextResponse.json(
         { error: 'Target role is required.' },
         { status: 400 },
@@ -31,14 +35,17 @@ export async function POST(request: Request) {
       return NextResponse.json({ data: [] });
     }
 
-    const paths = await getLearningPaths(roleSlug, selectedSkillSlugs);
+    const learningPaths = await getLearningPaths(roleSlug, selectedSkillSlugs);
 
-    return NextResponse.json({ data: paths });
+    return NextResponse.json({ data: learningPaths });
   } catch (error) {
-    console.error('Failed to fetch learning paths:', error);
+    console.error('Failed to load learning paths:', error);
 
     return NextResponse.json(
-      { error: 'Unable to load learning paths.' },
+      {
+        error:
+          'SkillGraph could not load the learning graph because the database is temporarily unavailable.',
+      },
       { status: 503 },
     );
   }
