@@ -176,8 +176,15 @@ export function AnalysisResults({ analysis }: AnalysisResultsProps) {
                 ))}
               </div>
             ) : (
-              <div className='mt-4 rounded-lg border border-dashed border-zinc-200 p-4 text-sm text-zinc-500'>
-                None of your selected skills match this role yet.
+              <div className='mt-4 rounded-lg border border-dashed border-zinc-200 bg-zinc-50/50 p-4'>
+                <p className='text-sm font-medium text-zinc-700'>
+                  No matching skills yet
+                </p>
+
+                <p className='mt-1 text-xs leading-5 text-zinc-500'>
+                  None of your selected skills currently match this role&apos;s
+                  requirements.
+                </p>
               </div>
             )}
           </CardContent>
