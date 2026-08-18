@@ -54,13 +54,13 @@ export function AnalysisResults({ analysis }: AnalysisResultsProps) {
 
   return (
     <section className='space-y-4'>
-      <div className='flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between'>
-        <div>
+      <div className='flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between'>
+        <div className='min-w-0'>
           <p className='text-sm font-medium text-indigo-600'>
             Skill gap analysis
           </p>
 
-          <h2 className='mt-1 text-2xl font-semibold tracking-tight text-zinc-950'>
+          <h2 className='mt-1 text-xl font-semibold tracking-tight text-zinc-950 sm:text-2xl'>
             {analysis.role.name}
           </h2>
 
@@ -74,23 +74,23 @@ export function AnalysisResults({ analysis }: AnalysisResultsProps) {
         </Badge>
       </div>
 
-      <div className='grid gap-4 md:grid-cols-2'>
+      <div className='grid gap-3 sm:grid-cols-2 sm:gap-4'>
         <Card className='border-zinc-200 bg-white shadow-sm'>
-          <CardContent className='p-5'>
-            <div className='flex items-start justify-between gap-6'>
+          <CardContent className='p-4 sm:p-5'>
+            <div className='flex items-start justify-between gap-4'>
               <div>
                 <p className='text-sm font-medium text-zinc-600'>
                   Overall match
                 </p>
 
-                <p className='mt-1 text-4xl font-semibold tracking-tight text-zinc-950'>
+                <p className='mt-1 text-3xl font-semibold tracking-tight text-zinc-950 sm:text-4xl'>
                   {analysis.matchPercentage}%
                 </p>
               </div>
 
-              <div className='text-right text-xs text-zinc-500'>
-                <p>{analysis.matchedWeight} matched points</p>
-                <p className='mt-1'>{analysis.totalWeight} total points</p>
+              <div className='shrink-0 text-right text-[11px] text-zinc-500 sm:text-xs'>
+                <p>{analysis.matchedWeight} matched</p>
+                <p className='mt-1'>{analysis.totalWeight} total</p>
               </div>
             </div>
 
@@ -106,23 +106,23 @@ export function AnalysisResults({ analysis }: AnalysisResultsProps) {
         </Card>
 
         <Card className='border-zinc-200 bg-white shadow-sm'>
-          <CardContent className='p-5'>
+          <CardContent className='p-4 sm:p-5'>
             <p className='text-sm font-medium text-zinc-600'>
               Requirement coverage
             </p>
 
-            <div className='mt-2 flex items-end justify-between gap-4'>
+            <div className='mt-2 flex items-end justify-between gap-3'>
               <div>
-                <p className='text-2xl font-semibold text-zinc-950'>
+                <p className='text-xl font-semibold text-zinc-950 sm:text-2xl'>
                   {analysis.matchedSkills.length} of {totalSkills}
                 </p>
 
-                <p className='mt-1 text-sm text-zinc-500'>
+                <p className='mt-1 text-xs text-zinc-500 sm:text-sm'>
                   Required skills already covered
                 </p>
               </div>
 
-              <Badge className='bg-amber-50 text-amber-700 hover:bg-amber-50'>
+              <Badge className='shrink-0 bg-amber-50 text-amber-700 hover:bg-amber-50'>
                 {analysis.missingSkills.length} missing
               </Badge>
             </div>
@@ -130,15 +130,15 @@ export function AnalysisResults({ analysis }: AnalysisResultsProps) {
         </Card>
       </div>
 
-      <div className='grid gap-4 lg:grid-cols-2'>
+      <div className='grid gap-3 lg:grid-cols-2 lg:gap-4'>
         <Card className='border-zinc-200 bg-white shadow-sm'>
-          <CardContent className='p-5'>
+          <CardContent className='p-4 sm:p-5'>
             <div className='flex items-center gap-2'>
               <div className='flex size-8 shrink-0 items-center justify-center rounded-full bg-emerald-50 text-emerald-600'>
                 <Check className='size-4' />
               </div>
 
-              <div>
+              <div className='min-w-0'>
                 <h3 className='text-sm font-semibold text-zinc-950'>
                   Skills you already have
                 </h3>
@@ -154,19 +154,21 @@ export function AnalysisResults({ analysis }: AnalysisResultsProps) {
                 {analysis.matchedSkills.map(({ skill, importance }) => (
                   <div
                     key={skill.id}
-                    className='flex items-center justify-between gap-4 rounded-lg border border-emerald-100 bg-emerald-50/50 px-3 py-2.5'
+                    className='flex items-center justify-between gap-3 rounded-lg border border-emerald-100 bg-emerald-50/50 px-3 py-2.5'
                   >
                     <div className='min-w-0'>
                       <p className='truncate text-sm font-medium text-zinc-900'>
                         {skill.name}
                       </p>
 
-                      <p className='text-xs text-zinc-500'>{skill.category}</p>
+                      <p className='truncate text-xs text-zinc-500'>
+                        {skill.category}
+                      </p>
                     </div>
 
                     <Badge
                       variant='secondary'
-                      className='shrink-0 bg-white text-xs'
+                      className='shrink-0 bg-white text-[10px] sm:text-xs'
                     >
                       {getImportanceLabel(importance)}
                     </Badge>
@@ -182,13 +184,13 @@ export function AnalysisResults({ analysis }: AnalysisResultsProps) {
         </Card>
 
         <Card className='border-zinc-200 bg-white shadow-sm'>
-          <CardContent className='p-5'>
+          <CardContent className='p-4 sm:p-5'>
             <div className='flex items-center gap-2'>
               <div className='flex size-8 shrink-0 items-center justify-center rounded-full bg-amber-50 text-amber-600'>
                 <CircleAlert className='size-4' />
               </div>
 
-              <div>
+              <div className='min-w-0'>
                 <h3 className='text-sm font-semibold text-zinc-950'>
                   Skills to develop
                 </h3>
@@ -203,19 +205,21 @@ export function AnalysisResults({ analysis }: AnalysisResultsProps) {
               {analysis.missingSkills.map(({ skill, importance }) => (
                 <div
                   key={skill.id}
-                  className='flex items-center justify-between gap-4 rounded-lg border border-amber-100 bg-amber-50/50 px-3 py-2.5'
+                  className='flex items-center justify-between gap-3 rounded-lg border border-amber-100 bg-amber-50/50 px-3 py-2.5'
                 >
                   <div className='min-w-0'>
                     <p className='truncate text-sm font-medium text-zinc-900'>
                       {skill.name}
                     </p>
 
-                    <p className='text-xs text-zinc-500'>{skill.category}</p>
+                    <p className='truncate text-xs text-zinc-500'>
+                      {skill.category}
+                    </p>
                   </div>
 
                   <Badge
                     variant='secondary'
-                    className='shrink-0 bg-white text-xs'
+                    className='shrink-0 bg-white text-[10px] sm:text-xs'
                   >
                     {getImportanceLabel(importance)}
                   </Badge>

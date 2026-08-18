@@ -132,10 +132,12 @@ function buildGraph(
       nodes.push({
         id: skill.slug,
         type: 'skill',
+
         position: {
           x: depth * 225,
           y: index * 105,
         },
+
         data: {
           label: skill.name,
           category: skill.category,
@@ -164,6 +166,7 @@ export function SkillGraph({
   );
 
   const [nodes, , onNodesChange] = useNodesState<SkillFlowNode>(graph.nodes);
+
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
 
   const connectedNodeIds = useMemo(() => {
@@ -189,8 +192,10 @@ export function SkillGraph({
   const displayNodes = useMemo(() => {
     return nodes.map((node) => ({
       ...node,
+
       style: {
         ...node.style,
+
         opacity: connectedNodeIds && !connectedNodeIds.has(node.id) ? 0.2 : 1,
       },
     }));
@@ -207,11 +212,16 @@ export function SkillGraph({
 
       return {
         ...edge,
+
         animated: isConnected,
+
         style: {
           ...edge.style,
+
           opacity: isConnected ? 1 : 0.12,
+
           stroke: isConnected ? '#6366f1' : '#a1a1aa',
+
           strokeWidth: isConnected ? 2.25 : 1.5,
         },
       };
@@ -227,7 +237,7 @@ export function SkillGraph({
   if (learningPaths.length === 0) {
     return (
       <Card className='border-zinc-200 bg-white shadow-sm'>
-        <CardContent className='p-5'>
+        <CardContent className='p-4 sm:p-5'>
           <p className='text-sm font-semibold text-zinc-950'>
             No learning path found
           </p>
@@ -243,9 +253,10 @@ export function SkillGraph({
 
   return (
     <Card className='overflow-hidden border-zinc-200 bg-white shadow-sm'>
-      <div className='border-b border-zinc-200 px-5 py-4'>
+      {/* Graph header */}
+      <div className='border-b border-zinc-200 px-4 py-3.5 sm:px-5 sm:py-4'>
         <div className='flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between'>
-          <div>
+          <div className='min-w-0'>
             <h3 className='text-sm font-semibold text-zinc-950'>
               Interactive learning graph
             </h3>
@@ -257,7 +268,8 @@ export function SkillGraph({
             </p>
           </div>
 
-          <div className='flex flex-wrap gap-x-4 gap-y-2 text-xs text-zinc-600'>
+          {/* Legend */}
+          <div className='flex shrink-0 flex-wrap gap-x-3 gap-y-2 text-[11px] text-zinc-600 sm:gap-x-4 sm:text-xs'>
             <div className='flex items-center gap-1.5'>
               <span className='size-2.5 rounded-full bg-emerald-500' />
               Known
@@ -276,7 +288,8 @@ export function SkillGraph({
         </div>
       </div>
 
-      <div className='h-90 w-full sm:h-105 lg:h-120'>
+      {/* Graph canvas */}
+      <div className='h-80 w-full sm:h-100 lg:h-120'>
         <ReactFlow<SkillFlowNode>
           nodes={displayNodes}
           edges={displayEdges}
@@ -308,11 +321,12 @@ export function SkillGraph({
         </ReactFlow>
       </div>
 
+      {/* Selected node details */}
       {selectedNode && (
-        <div className='border-t border-zinc-200 bg-zinc-50/60 px-4 py-3'>
-          <div className='flex items-start gap-3'>
+        <div className='border-t border-zinc-200 bg-zinc-50/60 px-3 py-2.5 sm:px-4 sm:py-3'>
+          <div className='flex items-start gap-2.5 sm:gap-3'>
             <div className='min-w-0 flex-1'>
-              <div className='flex flex-wrap items-center gap-2'>
+              <div className='flex flex-wrap items-center gap-1.5 sm:gap-2'>
                 <p className='text-sm font-semibold text-zinc-950'>
                   {selectedNode.data.label}
                 </p>
@@ -333,11 +347,11 @@ export function SkillGraph({
                       : 'Learning step'}
                 </span>
 
-                <span className='text-xs text-zinc-400'>
+                <span className='text-[11px] text-zinc-400 sm:text-xs'>
                   {selectedNode.data.category}
                 </span>
 
-                <span className='text-xs capitalize text-zinc-400'>
+                <span className='text-[11px] capitalize text-zinc-400 sm:text-xs'>
                   · {selectedNode.data.level}
                 </span>
               </div>
