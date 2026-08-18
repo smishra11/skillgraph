@@ -81,6 +81,7 @@ export function SkillSelector({
           </PopoverTrigger>
 
           <PopoverContent
+            side='bottom'
             align='start'
             sideOffset={6}
             className='w-(--anchor-width) p-0'

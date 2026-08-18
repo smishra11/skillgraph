@@ -8,7 +8,7 @@ import { cn } from '@/lib/utils';
 function Popover({
   ...props
 }: React.ComponentProps<typeof PopoverPrimitive.Root>) {
-  return <PopoverPrimitive.Root data-slot='popover' {...props} />;
+  return <PopoverPrimitive.Root data-slot='popover' modal {...props} />;
 }
 
 function PopoverTrigger({
@@ -19,11 +19,15 @@ function PopoverTrigger({
 
 function PopoverContent({
   className,
-  align = 'center',
-  sideOffset = 4,
+  align = 'start',
+  side = 'bottom',
+  sideOffset = 6,
   ...props
 }: React.ComponentProps<typeof PopoverPrimitive.Popup> & {
   align?: React.ComponentProps<typeof PopoverPrimitive.Positioner>['align'];
+
+  side?: React.ComponentProps<typeof PopoverPrimitive.Positioner>['side'];
+
   sideOffset?: React.ComponentProps<
     typeof PopoverPrimitive.Positioner
   >['sideOffset'];
@@ -32,14 +36,21 @@ function PopoverContent({
     <PopoverPrimitive.Portal>
       <PopoverPrimitive.Positioner
         align={align}
+        side={side}
         sideOffset={sideOffset}
+        collisionAvoidance={{
+          side: 'flip',
+          align: 'none',
+          fallbackAxisSide: 'none',
+        }}
+        collisionPadding={8}
         className='z-50'
       >
         <PopoverPrimitive.Popup
           data-slot='popover-content'
           className={cn(
             'bg-popover text-popover-foreground',
-            'w-72 rounded-lg border p-4 shadow-md outline-none',
+            'w-72 rounded-xl border border-zinc-200 bg-white p-4 shadow-lg outline-none',
             'origin-(--transform-origin)',
             'transition-[transform,scale,opacity]',
             'data-starting-style:scale-95 data-starting-style:opacity-0',

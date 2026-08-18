@@ -1,75 +1,112 @@
 'use client';
 
-import { Handle, Position, type Node, type NodeProps } from '@xyflow/react';
+import { Handle, Position, type NodeProps } from '@xyflow/react';
+import { Check, CircleDot, Target } from 'lucide-react';
 
-import { cn } from '@/lib/utils';
-
-export type SkillNodeStatus = 'known' | 'missing' | 'bridge';
+export type SkillNodeStatus = 'known' | 'bridge' | 'missing';
 
 export type SkillNodeData = {
-  label: string;
+  name: string;
   category: string;
   level: string;
-  description: string;
   status: SkillNodeStatus;
 };
 
-export type SkillFlowNode = Node<SkillNodeData, 'skill'>;
+const statusConfig = {
+  known: {
+    label: 'Known',
+    wrapper:
+      'border-emerald-200 bg-emerald-50 text-emerald-950 shadow-[0_8px_20px_-14px_rgba(5,150,105,0.45)]',
+    iconWrapper: 'border-emerald-200 bg-white text-emerald-600',
+    badge: 'border-emerald-200 bg-white/80 text-emerald-700',
+    handle: '!bg-emerald-400 !border-emerald-100',
+    icon: Check,
+  },
 
-const statusStyles: Record<SkillNodeStatus, string> = {
-  known: 'border-emerald-200 bg-emerald-50 text-emerald-950',
-  missing: 'border-amber-200 bg-amber-50 text-amber-950',
-  bridge: 'border-indigo-200 bg-indigo-50 text-indigo-950',
-};
+  bridge: {
+    label: 'Path',
+    wrapper:
+      'border-indigo-200 bg-indigo-50 text-indigo-950 shadow-[0_8px_20px_-14px_rgba(79,70,229,0.45)]',
+    iconWrapper: 'border-indigo-200 bg-white text-indigo-600',
+    badge: 'border-indigo-200 bg-white/80 text-indigo-700',
+    handle: '!bg-indigo-400 !border-indigo-100',
+    icon: CircleDot,
+  },
 
-const statusDotStyles: Record<SkillNodeStatus, string> = {
-  known: 'bg-emerald-500',
-  missing: 'bg-amber-500',
-  bridge: 'bg-indigo-500',
-};
+  missing: {
+    label: 'Target',
+    wrapper:
+      'border-amber-200 bg-amber-50 text-amber-950 shadow-[0_8px_20px_-14px_rgba(217,119,6,0.45)]',
+    iconWrapper: 'border-amber-200 bg-white text-amber-600',
+    badge: 'border-amber-200 bg-white/80 text-amber-700',
+    handle: '!bg-amber-400 !border-amber-100',
+    icon: Target,
+  },
+} satisfies Record<
+  SkillNodeStatus,
+  {
+    label: string;
+    wrapper: string;
+    iconWrapper: string;
+    badge: string;
+    handle: string;
+    icon: typeof Check;
+  }
+>;
 
-const statusLabels: Record<SkillNodeStatus, string> = {
-  known: 'Known skill',
-  missing: 'Skill to develop',
-  bridge: 'Learning step',
-};
+export function SkillNode({ data, selected }: NodeProps) {
+  const nodeData = data as SkillNodeData;
 
-export function SkillNode({ data, selected }: NodeProps<SkillFlowNode>) {
+  const config = statusConfig[nodeData.status];
+
+  const Icon = config.icon;
+
   return (
     <div
-      className={cn(
-        'w-44 rounded-xl border px-3.5 py-3 shadow-sm transition-[opacity,box-shadow,transform]',
-        statusStyles[data.status],
-        selected && 'ring-2 ring-indigo-500 ring-offset-2 ring-offset-white',
-      )}
+      className={`w-44 rounded-xl border px-3.5 py-3 transition-all duration-200 ${config.wrapper} ${
+        selected
+          ? 'ring-2 ring-indigo-500/30 ring-offset-2 ring-offset-white shadow-[0_14px_28px_-14px_rgba(79,70,229,0.45)]'
+          : ''
+      }`}
     >
       <Handle
         type='target'
         position={Position.Left}
-        className='size-2! border-2! border-white! bg-zinc-400!'
+        className={`size-2.5! border-2! ${config.handle}`}
       />
 
-      <div className='flex items-center gap-2'>
-        <span
-          className={cn(
-            'size-2 shrink-0 rounded-full',
-            statusDotStyles[data.status],
-          )}
-        />
+      <div className='flex items-start gap-2.5'>
+        <div
+          className={`flex size-7 shrink-0 items-center justify-center rounded-lg border ${config.iconWrapper}`}
+        >
+          <Icon className='size-3.5' />
+        </div>
 
-        <span className='truncate text-[11px] font-medium uppercase tracking-wide opacity-60'>
-          {data.category}
-        </span>
+        <div className='min-w-0 flex-1'>
+          <p className='truncate text-xs font-semibold'>{nodeData.name}</p>
+
+          <p className='mt-0.5 truncate text-[10px] opacity-65'>
+            {nodeData.category}
+          </p>
+        </div>
       </div>
 
-      <p className='mt-2 truncate text-sm font-semibold'>{data.label}</p>
+      <div className='mt-2.5 flex items-center justify-between gap-2'>
+        <span
+          className={`rounded-full border px-1.5 py-0.5 text-[8px] font-semibold uppercase tracking-[0.08em] ${config.badge}`}
+        >
+          {config.label}
+        </span>
 
-      <p className='mt-1 text-[11px] opacity-65'>{statusLabels[data.status]}</p>
+        <span className='text-[9px] font-medium capitalize opacity-55'>
+          {nodeData.level}
+        </span>
+      </div>
 
       <Handle
         type='source'
         position={Position.Right}
-        className='size-2! border-2! border-white! bg-zinc-400!'
+        className={`size-2.5! border-2! ${config.handle}`}
       />
     </div>
   );

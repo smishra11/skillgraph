@@ -1,33 +1,26 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { RefreshCcw } from 'lucide-react';
+import {
+  AlertCircle,
+  ArrowRight,
+  Loader2,
+  RefreshCw,
+  Sparkles,
+} from 'lucide-react';
 
-import type { SkillGapAnalysis } from '@/components/analysis-results';
-import type { LearningPath } from '@/components/graph/skill-graph';
-import { RoleSelector } from '@/components/role-selector';
-import { SkillSelector } from '@/components/skill-selector';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
+import { RoleSelector } from './role-selector';
+import { SkillSelector } from './skill-selector';
 
-type Role = {
-  id: string;
-  name: string;
-  slug: string;
-  level: string;
-  description: string;
-};
+import type {
+  LearningPath,
+  Role,
+  Skill,
+  SkillGapAnalysis,
+} from '@/lib/db/queries';
 
-type Skill = {
-  id: string;
-  name: string;
-  slug: string;
-  category: string;
-  level: string;
-  description: string;
-};
-
-export type SkillGraphResult = {
+type SkillGraphResult = {
   analysis: SkillGapAnalysis;
   learningPaths: LearningPath[];
   selectedSkillSlugs: string[];
@@ -65,22 +58,24 @@ export function AnalysisForm({ onAnalysisChange }: AnalysisFormProps) {
           throw new Error('Unable to load SkillGraph data.');
         }
 
-        const rolesData = await rolesResponse.json();
-        const skillsData = await skillsResponse.json();
+        const [rolesPayload, skillsPayload] = await Promise.all([
+          rolesResponse.json(),
+          skillsResponse.json(),
+        ]);
 
         if (cancelled) {
           return;
         }
 
-        setRoles(rolesData.data);
-        setSkills(skillsData.data);
+        setRoles(rolesPayload.data ?? []);
+        setSkills(skillsPayload.data ?? []);
       } catch {
         if (cancelled) {
           return;
         }
 
         setLoadError(
-          "We couldn't load the available roles and skills. Please try again.",
+          'We could not load the available skills and roles. Please try again.',
         );
       } finally {
         if (!cancelled) {
@@ -97,10 +92,10 @@ export function AnalysisForm({ onAnalysisChange }: AnalysisFormProps) {
   }, []);
 
   async function retryLoadData() {
-    try {
-      setIsLoading(true);
-      setLoadError('');
+    setIsLoading(true);
+    setLoadError('');
 
+    try {
       const [rolesResponse, skillsResponse] = await Promise.all([
         fetch('/api/roles'),
         fetch('/api/skills'),
@@ -110,18 +105,32 @@ export function AnalysisForm({ onAnalysisChange }: AnalysisFormProps) {
         throw new Error('Unable to load SkillGraph data.');
       }
 
-      const rolesData = await rolesResponse.json();
-      const skillsData = await skillsResponse.json();
+      const [rolesPayload, skillsPayload] = await Promise.all([
+        rolesResponse.json(),
+        skillsResponse.json(),
+      ]);
 
-      setRoles(rolesData.data);
-      setSkills(skillsData.data);
+      setRoles(rolesPayload.data ?? []);
+      setSkills(skillsPayload.data ?? []);
     } catch {
       setLoadError(
-        "We couldn't load the available roles and skills. Please try again.",
+        'We could not load the available skills and roles. Please try again.',
       );
     } finally {
       setIsLoading(false);
     }
+  }
+
+  function handleRoleChange(roleSlug: string) {
+    setSelectedRole(roleSlug);
+    setAnalysisError('');
+    onAnalysisChange(null);
+  }
+
+  function handleSkillsChange(skillSlugs: string[]) {
+    setSelectedSkills(skillSlugs);
+    setAnalysisError('');
+    onAnalysisChange(null);
   }
 
   async function handleAnalyze() {
@@ -129,17 +138,16 @@ export function AnalysisForm({ onAnalysisChange }: AnalysisFormProps) {
       return;
     }
 
+    setIsAnalyzing(true);
+    setAnalysisError('');
+    onAnalysisChange(null);
+
+    const requestBody = {
+      roleSlug: selectedRole,
+      selectedSkillSlugs: selectedSkills,
+    };
+
     try {
-      setIsAnalyzing(true);
-      setAnalysisError('');
-
-      onAnalysisChange(null);
-
-      const requestBody = {
-        roleSlug: selectedRole,
-        selectedSkillSlugs: selectedSkills,
-      };
-
       const [analysisResponse, learningPathsResponse] = await Promise.all([
         fetch('/api/analyze', {
           method: 'POST',
@@ -158,122 +166,219 @@ export function AnalysisForm({ onAnalysisChange }: AnalysisFormProps) {
         }),
       ]);
 
-      const analysisResult = await analysisResponse.json();
-
       if (!analysisResponse.ok) {
-        throw new Error(analysisResult.error ?? 'Unable to analyze skill gap.');
+        const errorPayload = await analysisResponse.json().catch(() => null);
+
+        throw new Error(
+          errorPayload?.error ?? 'SkillGraph could not complete the analysis.',
+        );
       }
+
+      const analysisPayload = await analysisResponse.json();
 
       let learningPaths: LearningPath[] = [];
       let graphError = '';
 
       if (learningPathsResponse.ok) {
-        const learningPathsResult = await learningPathsResponse.json();
+        const learningPathsPayload = await learningPathsResponse.json();
 
-        learningPaths = learningPathsResult.data;
+        learningPaths = learningPathsPayload.data ?? [];
       } else {
         graphError =
-          'Your skill analysis is available, but the learning graph could not be loaded.';
+          'Your skill-gap analysis is available, but the learning graph could not be loaded.';
       }
 
       onAnalysisChange({
-        analysis: analysisResult.data,
+        analysis: analysisPayload.data,
         learningPaths,
         selectedSkillSlugs: [...selectedSkills],
         graphError,
       });
     } catch (error) {
-      onAnalysisChange(null);
-
       setAnalysisError(
-        error instanceof Error ? error.message : 'Unable to analyze skill gap.',
+        error instanceof Error
+          ? error.message
+          : 'Something went wrong while analyzing your profile.',
       );
+
+      onAnalysisChange(null);
     } finally {
       setIsAnalyzing(false);
     }
   }
 
-  function handleRoleChange(value: string) {
-    setSelectedRole(value);
-    setAnalysisError('');
-    onAnalysisChange(null);
+  if (isLoading) {
+    return (
+      <div className='rounded-xl border border-zinc-200 bg-white p-5 shadow-[0_8px_24px_-18px_rgba(24,24,27,0.35)]'>
+        <div className='flex items-center gap-3'>
+          <div className='flex size-9 items-center justify-center rounded-lg bg-indigo-50'>
+            <Loader2 className='size-4 animate-spin text-indigo-600' />
+          </div>
+
+          <div>
+            <p className='text-sm font-medium text-zinc-800'>
+              Loading career data
+            </p>
+
+            <p className='mt-0.5 text-xs text-zinc-500'>
+              Fetching skills and frontend roles...
+            </p>
+          </div>
+        </div>
+
+        <div className='mt-5 space-y-4'>
+          <div>
+            <div className='h-3 w-24 animate-pulse rounded bg-zinc-100' />
+
+            <div className='mt-2 h-10 animate-pulse rounded-lg bg-zinc-100' />
+          </div>
+
+          <div>
+            <div className='h-3 w-20 animate-pulse rounded bg-zinc-100' />
+
+            <div className='mt-2 h-10 animate-pulse rounded-lg bg-zinc-100' />
+          </div>
+        </div>
+      </div>
+    );
   }
 
-  function handleSkillsChange(value: string[]) {
-    setSelectedSkills(value);
-    setAnalysisError('');
-    onAnalysisChange(null);
+  if (loadError) {
+    return (
+      <div className='rounded-xl border border-red-200 bg-red-50/80 p-4 shadow-[0_8px_22px_-18px_rgba(220,38,38,0.3)]'>
+        <div className='flex items-start gap-3'>
+          <div className='flex size-8 shrink-0 items-center justify-center rounded-lg bg-white'>
+            <AlertCircle className='size-4 text-red-600' />
+          </div>
+
+          <div className='min-w-0'>
+            <p className='text-sm font-semibold text-red-900'>
+              Unable to load SkillGraph
+            </p>
+
+            <p className='mt-1 text-xs leading-5 text-red-700'>{loadError}</p>
+          </div>
+        </div>
+
+        <Button
+          type='button'
+          variant='outline'
+          size='sm'
+          onClick={retryLoadData}
+          className='mt-4 w-full border-red-200 bg-white text-red-700 hover:bg-red-50 hover:text-red-800'
+        >
+          <RefreshCw className='size-3.5' />
+          Try again
+        </Button>
+      </div>
+    );
   }
 
   const canAnalyze =
     selectedRole.length > 0 && selectedSkills.length > 0 && !isAnalyzing;
 
   return (
-    <Card className='border-zinc-200 bg-white shadow-sm'>
-      <CardContent className='p-6 sm:p-8'>
-        {isLoading ? (
-          <div className='py-8 text-center'>
-            <div className='mx-auto size-5 animate-spin rounded-full border-2 border-zinc-200 border-t-indigo-600' />
+    <div>
+      <div className='space-y-5'>
+        {/* Current skills */}
+        <div>
+          <div className='mb-2 flex items-end justify-between gap-3'>
+            <div>
+              <label className='text-sm font-semibold text-zinc-800'>
+                Current skills
+              </label>
 
-            <p className='mt-3 text-sm text-zinc-500'>Loading SkillGraph...</p>
-          </div>
-        ) : loadError ? (
-          <div className='rounded-lg border border-red-200 bg-red-50 p-4'>
-            <p className='text-sm font-medium text-red-900'>
-              Unable to load SkillGraph
-            </p>
+              <p className='mt-0.5 text-[11px] leading-4 text-zinc-500'>
+                Select everything you already know.
+              </p>
+            </div>
 
-            <p className='mt-1 text-sm text-red-700'>{loadError}</p>
-
-            <Button
-              type='button'
-              variant='outline'
-              size='sm'
-              className='mt-4'
-              onClick={retryLoadData}
-            >
-              <RefreshCcw className='size-3.5' />
-              Try again
-            </Button>
-          </div>
-        ) : (
-          <div className='space-y-6'>
-            <SkillSelector
-              skills={skills}
-              selectedSkills={selectedSkills}
-              onChange={handleSkillsChange}
-            />
-
-            <RoleSelector
-              roles={roles}
-              value={selectedRole}
-              onChange={handleRoleChange}
-            />
-
-            {analysisError && (
-              <div className='rounded-lg border border-red-200 bg-red-50 px-4 py-3'>
-                <p className='text-sm text-red-700'>{analysisError}</p>
-              </div>
+            {selectedSkills.length > 0 && (
+              <span className='shrink-0 rounded-full border border-emerald-100 bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-700'>
+                {selectedSkills.length} selected
+              </span>
             )}
+          </div>
 
-            <Button
-              type='button'
-              className='w-full'
-              disabled={!canAnalyze}
-              onClick={handleAnalyze}
-            >
-              {isAnalyzing ? (
-                <>
-                  <span className='size-4 animate-spin rounded-full border-2 border-white/40 border-t-white' />
-                  Analyzing...
-                </>
-              ) : (
-                'Analyze skill gap'
-              )}
-            </Button>
+          <SkillSelector
+            skills={skills}
+            selectedSkills={selectedSkills}
+            onChange={handleSkillsChange}
+          />
+        </div>
+
+        {/* Target role */}
+        <div>
+          <div className='mb-2'>
+            <label className='text-sm font-semibold text-zinc-800'>
+              Target role
+            </label>
+
+            <p className='mt-0.5 text-[11px] leading-4 text-zinc-500'>
+              Choose the frontend role you want to evaluate.
+            </p>
+          </div>
+
+          <RoleSelector
+            roles={roles}
+            value={selectedRole}
+            onChange={handleRoleChange}
+          />
+        </div>
+      </div>
+
+      {/* Analyze action */}
+      <div className='mt-6'>
+        <Button
+          type='button'
+          onClick={handleAnalyze}
+          disabled={!canAnalyze}
+          className='group h-11 w-full rounded-xl bg-zinc-950 text-sm font-semibold text-white shadow-[0_10px_24px_-12px_rgba(24,24,27,0.55)] transition-all hover:bg-indigo-600 hover:shadow-[0_12px_28px_-12px_rgba(79,70,229,0.5)] disabled:cursor-not-allowed disabled:bg-zinc-200 disabled:text-zinc-400 disabled:shadow-none'
+        >
+          {isAnalyzing ? (
+            <>
+              <Loader2 className='size-4 animate-spin' />
+              Analyzing your profile...
+            </>
+          ) : (
+            <>
+              <Sparkles className='size-4' />
+              Analyze career path
+              <ArrowRight className='size-4 transition-transform duration-200 group-hover:translate-x-0.5' />
+            </>
+          )}
+        </Button>
+
+        {!selectedRole || selectedSkills.length === 0 ? (
+          <p className='mt-2.5 text-center text-[11px] leading-4 text-zinc-400'>
+            Select at least one skill and a target role to continue.
+          </p>
+        ) : (
+          <div className='mt-2.5 flex items-center justify-center gap-1.5 text-[11px] text-emerald-600'>
+            <span className='size-1.5 rounded-full bg-emerald-500' />
+            Ready to analyze
           </div>
         )}
-      </CardContent>
-    </Card>
+      </div>
+
+      {/* Analysis error */}
+      {analysisError && (
+        <div className='mt-4 rounded-xl border border-red-200 bg-red-50/80 p-3.5'>
+          <div className='flex items-start gap-2.5'>
+            <AlertCircle className='mt-0.5 size-4 shrink-0 text-red-600' />
+
+            <div>
+              <p className='text-xs font-semibold text-red-800'>
+                Analysis failed
+              </p>
+
+              <p className='mt-1 text-xs leading-5 text-red-600'>
+                {analysisError}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }

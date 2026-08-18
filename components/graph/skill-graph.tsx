@@ -3,37 +3,30 @@
 import { useMemo, useState } from 'react';
 import {
   Background,
+  BackgroundVariant,
   Controls,
   MarkerType,
   ReactFlow,
   useNodesState,
   type Edge,
+  type Node,
 } from '@xyflow/react';
-import { X } from 'lucide-react';
+import {
+  CheckCircle2,
+  GitBranch,
+  Network,
+  Route,
+  Target,
+  X,
+} from 'lucide-react';
+
+import type { LearningPath, Skill } from '@/lib/db/queries';
 
 import {
   SkillNode,
-  type SkillFlowNode,
+  type SkillNodeData,
   type SkillNodeStatus,
-} from '@/components/graph/skill-node';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-
-export type LearningPathSkill = {
-  id: string;
-  name: string;
-  slug: string;
-  category: string;
-  level: string;
-  description: string;
-};
-
-export type LearningPath = {
-  fromSkill: LearningPathSkill;
-  toSkill: LearningPathSkill;
-  hops: number;
-  path: LearningPathSkill[];
-};
+} from './skill-node';
 
 type SkillGraphProps = {
   learningPaths: LearningPath[];
@@ -41,119 +34,14 @@ type SkillGraphProps = {
   missingSkillSlugs: string[];
 };
 
+type SkillGraphBuildResult = {
+  nodes: Node<SkillNodeData>[];
+  edges: Edge[];
+};
+
 const nodeTypes = {
   skill: SkillNode,
 };
-
-function buildGraph(
-  learningPaths: LearningPath[],
-  selectedSkillSlugs: string[],
-  missingSkillSlugs: string[],
-) {
-  const selectedSet = new Set(selectedSkillSlugs);
-  const missingSet = new Set(missingSkillSlugs);
-
-  const skills = new Map<string, LearningPathSkill>();
-  const depths = new Map<string, number>();
-  const graphEdges = new Map<string, Edge>();
-
-  for (const learningPath of learningPaths) {
-    learningPath.path.forEach((skill, index) => {
-      skills.set(skill.slug, skill);
-
-      const existingDepth = depths.get(skill.slug);
-
-      if (existingDepth === undefined || index < existingDepth) {
-        depths.set(skill.slug, index);
-      }
-
-      const nextSkill = learningPath.path[index + 1];
-
-      if (!nextSkill) {
-        return;
-      }
-
-      const edgeId = `${skill.slug}-${nextSkill.slug}`;
-
-      if (!graphEdges.has(edgeId)) {
-        graphEdges.set(edgeId, {
-          id: edgeId,
-          source: skill.slug,
-          target: nextSkill.slug,
-          type: 'smoothstep',
-
-          markerEnd: {
-            type: MarkerType.ArrowClosed,
-            width: 14,
-            height: 14,
-          },
-
-          style: {
-            stroke: '#a1a1aa',
-            strokeWidth: 1.5,
-          },
-        });
-      }
-    });
-  }
-
-  const skillsByDepth = new Map<number, LearningPathSkill[]>();
-
-  for (const skill of skills.values()) {
-    const depth = depths.get(skill.slug) ?? 0;
-
-    const currentSkills = skillsByDepth.get(depth) ?? [];
-
-    currentSkills.push(skill);
-
-    skillsByDepth.set(depth, currentSkills);
-  }
-
-  const nodes: SkillFlowNode[] = [];
-
-  const sortedDepths = Array.from(skillsByDepth.keys()).sort((a, b) => a - b);
-
-  for (const depth of sortedDepths) {
-    const depthSkills = skillsByDepth.get(depth) ?? [];
-
-    const sortedSkills = [...depthSkills].sort((a, b) =>
-      a.name.localeCompare(b.name),
-    );
-
-    sortedSkills.forEach((skill, index) => {
-      let status: SkillNodeStatus = 'bridge';
-
-      if (selectedSet.has(skill.slug)) {
-        status = 'known';
-      } else if (missingSet.has(skill.slug)) {
-        status = 'missing';
-      }
-
-      nodes.push({
-        id: skill.slug,
-        type: 'skill',
-
-        position: {
-          x: depth * 225,
-          y: index * 105,
-        },
-
-        data: {
-          label: skill.name,
-          category: skill.category,
-          level: skill.level,
-          description: skill.description,
-          status,
-        },
-      });
-    });
-  }
-
-  return {
-    nodes,
-    edges: Array.from(graphEdges.values()),
-  };
-}
 
 export function SkillGraph({
   learningPaths,
@@ -165,140 +53,122 @@ export function SkillGraph({
     [learningPaths, selectedSkillSlugs, missingSkillSlugs],
   );
 
-  const [nodes, , onNodesChange] = useNodesState<SkillFlowNode>(graph.nodes);
+  const [nodes, , onNodesChange] = useNodesState(graph.nodes);
 
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
 
+  const selectedNode = nodes.find((node) => node.id === selectedNodeId) ?? null;
+
   const connectedNodeIds = useMemo(() => {
     if (!selectedNodeId) {
-      return null;
+      return new Set<string>();
     }
 
-    const connected = new Set<string>([selectedNodeId]);
+    const ids = new Set<string>([selectedNodeId]);
 
     for (const edge of graph.edges) {
       if (edge.source === selectedNodeId) {
-        connected.add(edge.target);
+        ids.add(edge.target);
       }
 
       if (edge.target === selectedNodeId) {
-        connected.add(edge.source);
+        ids.add(edge.source);
       }
     }
 
-    return connected;
+    return ids;
   }, [graph.edges, selectedNodeId]);
 
-  const displayNodes = useMemo(() => {
-    return nodes.map((node) => ({
-      ...node,
+  const displayNodes = useMemo(
+    () =>
+      nodes.map((node) => ({
+        ...node,
 
-      style: {
-        ...node.style,
-
-        opacity: connectedNodeIds && !connectedNodeIds.has(node.id) ? 0.2 : 1,
-      },
-    }));
-  }, [nodes, connectedNodeIds]);
-
-  const displayEdges = useMemo(() => {
-    return graph.edges.map((edge) => {
-      if (!selectedNodeId) {
-        return edge;
-      }
-
-      const isConnected =
-        edge.source === selectedNodeId || edge.target === selectedNodeId;
-
-      return {
-        ...edge,
-
-        animated: isConnected,
+        selected: node.id === selectedNodeId,
 
         style: {
-          ...edge.style,
+          ...node.style,
 
-          opacity: isConnected ? 1 : 0.12,
+          opacity: selectedNodeId && !connectedNodeIds.has(node.id) ? 0.22 : 1,
 
-          stroke: isConnected ? '#6366f1' : '#a1a1aa',
-
-          strokeWidth: isConnected ? 2.25 : 1.5,
+          transition: 'opacity 180ms ease',
         },
-      };
-    });
-  }, [graph.edges, selectedNodeId]);
+      })),
+    [nodes, selectedNodeId, connectedNodeIds],
+  );
 
-  const selectedNode = nodes.find((node) => node.id === selectedNodeId) ?? null;
+  const displayEdges = useMemo(
+    () =>
+      graph.edges.map((edge) => {
+        const isConnected =
+          selectedNodeId &&
+          (edge.source === selectedNodeId || edge.target === selectedNodeId);
 
-  function clearSelection() {
-    setSelectedNodeId(null);
-  }
+        return {
+          ...edge,
+
+          animated: Boolean(isConnected),
+
+          style: {
+            stroke: isConnected ? '#6366f1' : '#a1a1aa',
+
+            strokeWidth: isConnected ? 2 : 1.5,
+
+            opacity: selectedNodeId && !isConnected ? 0.12 : 1,
+
+            transition: 'opacity 180ms ease, stroke 180ms ease',
+          },
+
+          markerEnd: {
+            type: MarkerType.ArrowClosed,
+
+            color: isConnected ? '#6366f1' : '#a1a1aa',
+
+            width: 14,
+            height: 14,
+          },
+        };
+      }),
+    [graph.edges, selectedNodeId],
+  );
 
   if (learningPaths.length === 0) {
-    return (
-      <Card className='border-zinc-200 bg-white shadow-sm'>
-        <CardContent className='p-4 sm:p-5'>
-          <p className='text-sm font-semibold text-zinc-950'>
-            No learning path found
-          </p>
-
-          <p className='mt-1 max-w-2xl text-sm leading-6 text-zinc-500'>
-            We couldn&apos;t find a prerequisite path from your selected skills
-            to the missing requirements for this role.
-          </p>
-        </CardContent>
-      </Card>
-    );
+    return <GraphEmptyState />;
   }
 
   return (
-    <Card className='overflow-hidden border-zinc-200 bg-white shadow-sm'>
-      {/* Graph header */}
-      <div className='border-b border-zinc-200 px-4 py-3.5 sm:px-5 sm:py-4'>
-        <div className='flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between'>
-          <div className='min-w-0'>
-            <h3 className='text-sm font-semibold text-zinc-950'>
-              Interactive learning graph
-            </h3>
+    <div className='overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-[0_14px_38px_-28px_rgba(24,24,27,0.40)]'>
+      {/* Graph toolbar */}
+      <div className='flex flex-col gap-3 border-b border-zinc-100 bg-white px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between'>
+        <div className='flex flex-wrap items-center gap-x-4 gap-y-2'>
+          <LegendItem type='known' label='Known skill' />
 
-            <p className='mt-1 max-w-xl text-xs leading-5 text-zinc-500'>
-              Follow the arrows from skills you know toward skills you need to
-              develop. Drag nodes or select one to inspect its direct
-              connections.
-            </p>
-          </div>
+          <LegendItem type='bridge' label='Learning path' />
 
-          {/* Legend */}
-          <div className='flex shrink-0 flex-wrap gap-x-3 gap-y-2 text-[11px] text-zinc-600 sm:gap-x-4 sm:text-xs'>
-            <div className='flex items-center gap-1.5'>
-              <span className='size-2.5 rounded-full bg-emerald-500' />
-              Known
-            </div>
+          <LegendItem type='missing' label='Skill to develop' />
+        </div>
 
-            <div className='flex items-center gap-1.5'>
-              <span className='size-2.5 rounded-full bg-indigo-500' />
-              Learning step
-            </div>
-
-            <div className='flex items-center gap-1.5'>
-              <span className='size-2.5 rounded-full bg-amber-500' />
-              Missing
-            </div>
-          </div>
+        <div className='flex items-center gap-1.5 text-[10px] font-medium text-zinc-400'>
+          <Network className='size-3' />
+          Click a node to explore connections
         </div>
       </div>
 
-      {/* Graph canvas */}
-      <div className='h-80 w-full sm:h-100 lg:h-120'>
-        <ReactFlow<SkillFlowNode>
+      {/* Flow canvas */}
+      <div className='relative h85 w-full bg-[#fcfcfd] sm:h-102.5 lg:h-122.5'>
+        <ReactFlow
           nodes={displayNodes}
           edges={displayEdges}
           nodeTypes={nodeTypes}
           onNodesChange={onNodesChange}
-          onNodeClick={(_event, node) => {
-            setSelectedNodeId(node.id);
+          onNodeClick={(_, node) => {
+            setSelectedNodeId((current) =>
+              current === node.id ? null : node.id,
+            );
           }}
-          onPaneClick={clearSelection}
+          onPaneClick={() => {
+            setSelectedNodeId(null);
+          }}
           nodesDraggable
           nodesConnectable={false}
           edgesReconnectable={false}
@@ -314,66 +184,305 @@ export function SkillGraph({
           panOnDrag
           zoomOnScroll
           colorMode='light'
+          proOptions={{
+            hideAttribution: true,
+          }}
         >
-          <Background gap={22} size={1} color='#e4e4e7' />
+          <Background
+            variant={BackgroundVariant.Dots}
+            gap={22}
+            size={1}
+            color='#d4d4d8'
+          />
 
-          <Controls position='bottom-left' showInteractive={false} />
+          <Controls
+            position='bottom-left'
+            showInteractive={false}
+            className='overflow-hidden! rounded-xl! border! border-zinc-200! bg-white! shadow-md!'
+          />
         </ReactFlow>
+
+        {/* Canvas helper */}
+        {!selectedNodeId && (
+          <div className='pointer-events-none absolute right-3 top-3 hidden rounded-lg border border-zinc-200 bg-white/90 px-2.5 py-1.5 text-[10px] font-medium text-zinc-400 shadow-sm backdrop-blur-sm sm:block'>
+            Drag nodes · Scroll to zoom
+          </div>
+        )}
       </div>
 
-      {/* Selected node details */}
+      {/* Selected skill detail */}
       {selectedNode && (
-        <div className='border-t border-zinc-200 bg-zinc-50/60 px-3 py-2.5 sm:px-4 sm:py-3'>
-          <div className='flex items-start gap-2.5 sm:gap-3'>
-            <div className='min-w-0 flex-1'>
-              <div className='flex flex-wrap items-center gap-1.5 sm:gap-2'>
-                <p className='text-sm font-semibold text-zinc-950'>
-                  {selectedNode.data.label}
-                </p>
-
-                <span
-                  className={
-                    selectedNode.data.status === 'known'
-                      ? 'rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-medium text-emerald-700'
-                      : selectedNode.data.status === 'missing'
-                        ? 'rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-medium text-amber-700'
-                        : 'rounded-full bg-indigo-100 px-2 py-0.5 text-[10px] font-medium text-indigo-700'
-                  }
-                >
-                  {selectedNode.data.status === 'known'
-                    ? 'Known'
-                    : selectedNode.data.status === 'missing'
-                      ? 'Missing'
-                      : 'Learning step'}
-                </span>
-
-                <span className='text-[11px] text-zinc-400 sm:text-xs'>
-                  {selectedNode.data.category}
-                </span>
-
-                <span className='text-[11px] capitalize text-zinc-400 sm:text-xs'>
-                  · {selectedNode.data.level}
-                </span>
-              </div>
-
-              <p className='mt-1 line-clamp-2 max-w-4xl text-xs leading-5 text-zinc-600'>
-                {selectedNode.data.description}
-              </p>
-            </div>
-
-            <Button
-              type='button'
-              variant='ghost'
-              size='icon'
-              className='size-7 shrink-0 text-zinc-400 hover:text-zinc-900'
-              onClick={clearSelection}
-              aria-label='Close skill details'
-            >
-              <X className='size-3.5' />
-            </Button>
-          </div>
-        </div>
+        <SelectedNodeDetails
+          node={selectedNode}
+          onClose={() => setSelectedNodeId(null)}
+        />
       )}
-    </Card>
+    </div>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+/* Build graph                                                                */
+/* -------------------------------------------------------------------------- */
+
+function buildGraph(
+  learningPaths: LearningPath[],
+  selectedSkillSlugs: string[],
+  missingSkillSlugs: string[],
+): SkillGraphBuildResult {
+  const selectedSkillSet = new Set(selectedSkillSlugs);
+
+  const missingSkillSet = new Set(missingSkillSlugs);
+
+  const skills = new Map<string, Skill>();
+
+  const depths = new Map<string, number>();
+
+  const edgeMap = new Map<string, Edge>();
+
+  for (const learningPath of learningPaths) {
+    learningPath.path.forEach((skill, index) => {
+      skills.set(skill.slug, skill);
+
+      const existingDepth = depths.get(skill.slug);
+
+      if (existingDepth === undefined || index < existingDepth) {
+        depths.set(skill.slug, index);
+      }
+    });
+
+    for (let index = 0; index < learningPath.path.length - 1; index += 1) {
+      const source = learningPath.path[index];
+
+      const target = learningPath.path[index + 1];
+
+      const edgeId = `${source.slug}-${target.slug}`;
+
+      if (!edgeMap.has(edgeId)) {
+        edgeMap.set(edgeId, {
+          id: edgeId,
+          source: source.slug,
+          target: target.slug,
+          type: 'smoothstep',
+
+          markerEnd: {
+            type: MarkerType.ArrowClosed,
+            color: '#a1a1aa',
+            width: 14,
+            height: 14,
+          },
+
+          style: {
+            stroke: '#a1a1aa',
+            strokeWidth: 1.5,
+          },
+        });
+      }
+    }
+  }
+
+  const groupedByDepth = new Map<number, Skill[]>();
+
+  for (const skill of skills.values()) {
+    const depth = depths.get(skill.slug) ?? 0;
+
+    const group = groupedByDepth.get(depth) ?? [];
+
+    group.push(skill);
+
+    groupedByDepth.set(depth, group);
+  }
+
+  const nodes: Node<SkillNodeData>[] = [];
+
+  const sortedDepths = Array.from(groupedByDepth.keys()).sort((a, b) => a - b);
+
+  for (const depth of sortedDepths) {
+    const group = groupedByDepth.get(depth) ?? [];
+
+    group.sort((a, b) => a.name.localeCompare(b.name));
+
+    group.forEach((skill, index) => {
+      let status: SkillNodeStatus = 'bridge';
+
+      if (selectedSkillSet.has(skill.slug)) {
+        status = 'known';
+      } else if (missingSkillSet.has(skill.slug)) {
+        status = 'missing';
+      }
+
+      nodes.push({
+        id: skill.slug,
+
+        type: 'skill',
+
+        position: {
+          x: depth * 225,
+          y: index * 110,
+        },
+
+        data: {
+          name: skill.name,
+          category: skill.category,
+          level: skill.level,
+          status,
+        },
+      });
+    });
+  }
+
+  return {
+    nodes,
+    edges: Array.from(edgeMap.values()),
+  };
+}
+
+/* -------------------------------------------------------------------------- */
+/* Legend                                                                     */
+/* -------------------------------------------------------------------------- */
+
+type LegendItemProps = {
+  type: SkillNodeStatus;
+  label: string;
+};
+
+function LegendItem({ type, label }: LegendItemProps) {
+  const styles = {
+    known: {
+      dot: 'bg-emerald-500',
+      text: 'text-emerald-700',
+    },
+
+    bridge: {
+      dot: 'bg-indigo-500',
+      text: 'text-indigo-700',
+    },
+
+    missing: {
+      dot: 'bg-amber-500',
+      text: 'text-amber-700',
+    },
+  };
+
+  return (
+    <div className='flex items-center gap-1.5'>
+      <span className={`size-2 rounded-full ${styles[type].dot}`} />
+
+      <span className={`text-[10px] font-semibold ${styles[type].text}`}>
+        {label}
+      </span>
+    </div>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+/* Selected node                                                              */
+/* -------------------------------------------------------------------------- */
+
+type SelectedNodeDetailsProps = {
+  node: Node<SkillNodeData>;
+  onClose: () => void;
+};
+
+function SelectedNodeDetails({ node, onClose }: SelectedNodeDetailsProps) {
+  const data = node.data;
+
+  const statusStyles = {
+    known: 'border-emerald-100 bg-emerald-50 text-emerald-700',
+
+    bridge: 'border-indigo-100 bg-indigo-50 text-indigo-700',
+
+    missing: 'border-amber-100 bg-amber-50 text-amber-700',
+  };
+
+  const statusLabels = {
+    known: 'Known',
+    bridge: 'Learning path',
+    missing: 'Skill to develop',
+  };
+
+  return (
+    <div className='flex items-start justify-between gap-4 border-t border-zinc-100 bg-zinc-50/70 px-4 py-3'>
+      <div className='min-w-0'>
+        <div className='flex flex-wrap items-center gap-2'>
+          <p className='text-sm font-semibold text-zinc-900'>{data.name}</p>
+
+          <span
+            className={`rounded-full border px-2 py-0.5 text-[9px] font-semibold ${statusStyles[data.status]}`}
+          >
+            {statusLabels[data.status]}
+          </span>
+        </div>
+
+        <div className='mt-1 flex flex-wrap items-center gap-1.5 text-[11px] text-zinc-500'>
+          <span>{data.category}</span>
+
+          <span className='text-zinc-300'>•</span>
+
+          <span className='capitalize'>{data.level}</span>
+        </div>
+
+        <p className='mt-1.5 text-[11px] leading-5 text-zinc-400'>
+          Select connected nodes to explore the prerequisite relationship.
+        </p>
+      </div>
+
+      <button
+        type='button'
+        onClick={onClose}
+        aria-label='Clear selected skill'
+        className='flex size-7 shrink-0 items-center justify-center rounded-lg text-zinc-400 transition-colors hover:bg-zinc-200/70 hover:text-zinc-700'
+      >
+        <X className='size-3.5' />
+      </button>
+    </div>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+/* Empty graph                                                                */
+/* -------------------------------------------------------------------------- */
+
+function GraphEmptyState() {
+  return (
+    <div className='relative overflow-hidden rounded-2xl border border-zinc-200 bg-white px-5 py-10 text-center shadow-[0_10px_30px_-24px_rgba(24,24,27,0.35)] sm:px-8'>
+      <div
+        aria-hidden='true'
+        className='absolute left-1/2 top-0 size-44 -translate-x-1/2 -translate-y-1/2 rounded-full bg-indigo-50 blur-3xl'
+      />
+
+      <div className='relative'>
+        <div className='mx-auto flex size-11 items-center justify-center rounded-xl border border-indigo-100 bg-indigo-50 shadow-sm'>
+          <Route className='size-5 text-indigo-600' />
+        </div>
+
+        <h4 className='mt-4 text-sm font-semibold text-zinc-900'>
+          No additional learning path needed
+        </h4>
+
+        <p className='mx-auto mt-2 max-w-md text-xs leading-5 text-zinc-500'>
+          SkillGraph did not find a prerequisite path from your selected skills
+          to the remaining requirements. This can also happen when you already
+          cover the relevant skills for this role.
+        </p>
+
+        <div className='mt-5 flex flex-wrap items-center justify-center gap-3 text-[10px] font-medium text-zinc-400'>
+          <span className='inline-flex items-center gap-1.5'>
+            <CheckCircle2 className='size-3 text-emerald-500' />
+            Known
+          </span>
+
+          <span className='inline-flex items-center gap-1.5'>
+            <GitBranch className='size-3 text-indigo-500' />
+            Prerequisites
+          </span>
+
+          <span className='inline-flex items-center gap-1.5'>
+            <Target className='size-3 text-amber-500' />
+            Target
+          </span>
+        </div>
+      </div>
+    </div>
   );
 }
