@@ -1,13 +1,14 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { RefreshCcw } from 'lucide-react';
 
 import type { SkillGapAnalysis } from '@/components/analysis-results';
+import type { LearningPath } from '@/components/graph/skill-graph';
 import { RoleSelector } from '@/components/role-selector';
 import { SkillSelector } from '@/components/skill-selector';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import type { LearningPath } from '@/components/graph/skill-graph';
 
 type Role = {
   id: string;
@@ -51,11 +52,10 @@ export function AnalysisForm({ onAnalysisChange }: AnalysisFormProps) {
   const [analysisError, setAnalysisError] = useState('');
 
   useEffect(() => {
-    async function loadData() {
-      try {
-        setIsLoading(true);
-        setLoadError('');
+    let cancelled = false;
 
+    async function fetchInitialData() {
+      try {
         const [rolesResponse, skillsResponse] = await Promise.all([
           fetch('/api/roles'),
           fetch('/api/skills'),
@@ -68,19 +68,61 @@ export function AnalysisForm({ onAnalysisChange }: AnalysisFormProps) {
         const rolesData = await rolesResponse.json();
         const skillsData = await skillsResponse.json();
 
+        if (cancelled) {
+          return;
+        }
+
         setRoles(rolesData.data);
         setSkills(skillsData.data);
       } catch {
+        if (cancelled) {
+          return;
+        }
+
         setLoadError(
           "We couldn't load the available roles and skills. Please try again.",
         );
       } finally {
-        setIsLoading(false);
+        if (!cancelled) {
+          setIsLoading(false);
+        }
       }
     }
 
-    loadData();
+    void fetchInitialData();
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
+
+  async function retryLoadData() {
+    try {
+      setIsLoading(true);
+      setLoadError('');
+
+      const [rolesResponse, skillsResponse] = await Promise.all([
+        fetch('/api/roles'),
+        fetch('/api/skills'),
+      ]);
+
+      if (!rolesResponse.ok || !skillsResponse.ok) {
+        throw new Error('Unable to load SkillGraph data.');
+      }
+
+      const rolesData = await rolesResponse.json();
+      const skillsData = await skillsResponse.json();
+
+      setRoles(rolesData.data);
+      setSkills(skillsData.data);
+    } catch {
+      setLoadError(
+        "We couldn't load the available roles and skills. Please try again.",
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  }
 
   async function handleAnalyze() {
     if (!selectedRole || selectedSkills.length === 0) {
@@ -90,6 +132,7 @@ export function AnalysisForm({ onAnalysisChange }: AnalysisFormProps) {
     try {
       setIsAnalyzing(true);
       setAnalysisError('');
+
       onAnalysisChange(null);
 
       const requestBody = {
@@ -167,17 +210,34 @@ export function AnalysisForm({ onAnalysisChange }: AnalysisFormProps) {
 
   return (
     <Card className='border-zinc-200 bg-white shadow-sm'>
-      <CardContent className='space-y-6 p-6 sm:p-8'>
-        {loadError ? (
+      <CardContent className='p-6 sm:p-8'>
+        {isLoading ? (
+          <div className='py-8 text-center'>
+            <div className='mx-auto size-5 animate-spin rounded-full border-2 border-zinc-200 border-t-indigo-600' />
+
+            <p className='mt-3 text-sm text-zinc-500'>Loading SkillGraph...</p>
+          </div>
+        ) : loadError ? (
           <div className='rounded-lg border border-red-200 bg-red-50 p-4'>
             <p className='text-sm font-medium text-red-900'>
               Unable to load SkillGraph
             </p>
 
             <p className='mt-1 text-sm text-red-700'>{loadError}</p>
+
+            <Button
+              type='button'
+              variant='outline'
+              size='sm'
+              className='mt-4'
+              onClick={retryLoadData}
+            >
+              <RefreshCcw className='size-3.5' />
+              Try again
+            </Button>
           </div>
         ) : (
-          <>
+          <div className='space-y-6'>
             <SkillSelector
               skills={skills}
               selectedSkills={selectedSkills}
@@ -199,16 +259,19 @@ export function AnalysisForm({ onAnalysisChange }: AnalysisFormProps) {
             <Button
               type='button'
               className='w-full'
-              disabled={isLoading || !canAnalyze}
+              disabled={!canAnalyze}
               onClick={handleAnalyze}
             >
-              {isLoading
-                ? 'Loading SkillGraph...'
-                : isAnalyzing
-                  ? 'Analyzing your skills...'
-                  : 'Analyze skill gap'}
+              {isAnalyzing ? (
+                <>
+                  <span className='size-4 animate-spin rounded-full border-2 border-white/40 border-t-white' />
+                  Analyzing...
+                </>
+              ) : (
+                'Analyze skill gap'
+              )}
             </Button>
-          </>
+          </div>
         )}
       </CardContent>
     </Card>

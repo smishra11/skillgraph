@@ -271,7 +271,10 @@ export async function getLearningPaths(
         [node IN nodes(path) | node.level] AS pathLevels,
         [node IN nodes(path) | node.description] AS pathDescriptions
 
-      ORDER BY hops ASC, toSkillName ASC
+      ORDER BY
+        toSkillName ASC,
+        hops ASC,
+        fromSkillName ASC
     `,
     {
       roleSlug,
@@ -279,7 +282,7 @@ export async function getLearningPaths(
     },
   );
 
-  return result.records.map((record) => {
+  const allPaths: LearningPath[] = result.records.map((record) => {
     const pathIds = record.get('pathIds') as string[];
     const pathNames = record.get('pathNames') as string[];
     const pathSlugs = record.get('pathSlugs') as string[];
@@ -305,6 +308,7 @@ export async function getLearningPaths(
         level: record.get('fromSkillLevel'),
         description: record.get('fromSkillDescription'),
       },
+
       toSkill: {
         id: record.get('toSkillId'),
         name: record.get('toSkillName'),
@@ -313,8 +317,35 @@ export async function getLearningPaths(
         level: record.get('toSkillLevel'),
         description: record.get('toSkillDescription'),
       },
+
       hops: Number(record.get('hops')),
+
       path,
     };
+  });
+
+  const shortestPathByTarget = new Map<string, LearningPath>();
+
+  for (const learningPath of allPaths) {
+    const targetSlug = learningPath.toSkill.slug;
+
+    const existingPath = shortestPathByTarget.get(targetSlug);
+
+    if (!existingPath) {
+      shortestPathByTarget.set(targetSlug, learningPath);
+      continue;
+    }
+
+    if (learningPath.hops < existingPath.hops) {
+      shortestPathByTarget.set(targetSlug, learningPath);
+    }
+  }
+
+  return Array.from(shortestPathByTarget.values()).sort((a, b) => {
+    if (a.hops !== b.hops) {
+      return a.hops - b.hops;
+    }
+
+    return a.toSkill.name.localeCompare(b.toSkill.name);
   });
 }
