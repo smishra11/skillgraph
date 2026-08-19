@@ -8,35 +8,20 @@ import {
   MarkerType,
   ReactFlow,
   useNodesState,
-  type Edge,
-  type Node,
 } from '@xyflow/react';
-import {
-  CheckCircle2,
-  GitBranch,
-  Network,
-  Route,
-  Target,
-  X,
-} from 'lucide-react';
+import { Network } from 'lucide-react';
 
-import type { LearningPath, Skill } from '@/lib/db/queries';
+import type { LearningPath } from '@/lib/db/queries';
 
-import {
-  SkillNode,
-  type SkillNodeData,
-  type SkillNodeStatus,
-} from './skill-node';
+import { buildSkillGraph } from './build-skill-graph';
+import { GraphEmptyState } from './graph-empty-state';
+import { SelectedNodeDetails } from './selected-node-details';
+import { SkillNode, type SkillNodeStatus } from './skill-node';
 
 type SkillGraphProps = {
   learningPaths: LearningPath[];
   selectedSkillSlugs: string[];
   missingSkillSlugs: string[];
-};
-
-type SkillGraphBuildResult = {
-  nodes: Node<SkillNodeData>[];
-  edges: Edge[];
 };
 
 const nodeTypes = {
@@ -49,7 +34,7 @@ export function SkillGraph({
   missingSkillSlugs,
 }: SkillGraphProps) {
   const graph = useMemo(
-    () => buildGraph(learningPaths, selectedSkillSlugs, missingSkillSlugs),
+    () => buildSkillGraph(learningPaths, selectedSkillSlugs, missingSkillSlugs),
     [learningPaths, selectedSkillSlugs, missingSkillSlugs],
   );
 
@@ -133,7 +118,7 @@ export function SkillGraph({
   );
 
   if (learningPaths.length === 0) {
-    return <GraphEmptyState />;
+    return <GraphEmptyState hasMissingSkills={missingSkillSlugs.length > 0} />;
   }
 
   return (
@@ -221,126 +206,6 @@ export function SkillGraph({
   );
 }
 
-/* -------------------------------------------------------------------------- */
-/* Build graph                                                                */
-/* -------------------------------------------------------------------------- */
-
-function buildGraph(
-  learningPaths: LearningPath[],
-  selectedSkillSlugs: string[],
-  missingSkillSlugs: string[],
-): SkillGraphBuildResult {
-  const selectedSkillSet = new Set(selectedSkillSlugs);
-
-  const missingSkillSet = new Set(missingSkillSlugs);
-
-  const skills = new Map<string, Skill>();
-
-  const depths = new Map<string, number>();
-
-  const edgeMap = new Map<string, Edge>();
-
-  for (const learningPath of learningPaths) {
-    learningPath.path.forEach((skill, index) => {
-      skills.set(skill.slug, skill);
-
-      const existingDepth = depths.get(skill.slug);
-
-      if (existingDepth === undefined || index < existingDepth) {
-        depths.set(skill.slug, index);
-      }
-    });
-
-    for (let index = 0; index < learningPath.path.length - 1; index += 1) {
-      const source = learningPath.path[index];
-
-      const target = learningPath.path[index + 1];
-
-      const edgeId = `${source.slug}-${target.slug}`;
-
-      if (!edgeMap.has(edgeId)) {
-        edgeMap.set(edgeId, {
-          id: edgeId,
-          source: source.slug,
-          target: target.slug,
-          type: 'smoothstep',
-
-          markerEnd: {
-            type: MarkerType.ArrowClosed,
-            color: '#a1a1aa',
-            width: 14,
-            height: 14,
-          },
-
-          style: {
-            stroke: '#a1a1aa',
-            strokeWidth: 1.5,
-          },
-        });
-      }
-    }
-  }
-
-  const groupedByDepth = new Map<number, Skill[]>();
-
-  for (const skill of skills.values()) {
-    const depth = depths.get(skill.slug) ?? 0;
-
-    const group = groupedByDepth.get(depth) ?? [];
-
-    group.push(skill);
-
-    groupedByDepth.set(depth, group);
-  }
-
-  const nodes: Node<SkillNodeData>[] = [];
-
-  const sortedDepths = Array.from(groupedByDepth.keys()).sort((a, b) => a - b);
-
-  for (const depth of sortedDepths) {
-    const group = groupedByDepth.get(depth) ?? [];
-
-    group.sort((a, b) => a.name.localeCompare(b.name));
-
-    group.forEach((skill, index) => {
-      let status: SkillNodeStatus = 'bridge';
-
-      if (selectedSkillSet.has(skill.slug)) {
-        status = 'known';
-      } else if (missingSkillSet.has(skill.slug)) {
-        status = 'missing';
-      }
-
-      nodes.push({
-        id: skill.slug,
-
-        type: 'skill',
-
-        position: {
-          x: depth * 225,
-          y: index * 110,
-        },
-
-        data: {
-          name: skill.name,
-          category: skill.category,
-          level: skill.level,
-          status,
-        },
-      });
-    });
-  }
-
-  return {
-    nodes,
-    edges: Array.from(edgeMap.values()),
-  };
-}
-
-/* -------------------------------------------------------------------------- */
-/* Legend                                                                     */
-/* -------------------------------------------------------------------------- */
-
 type LegendItemProps = {
   type: SkillNodeStatus;
   label: string;
@@ -373,120 +238,6 @@ function LegendItem({ type, label }: LegendItemProps) {
       >
         {label}
       </span>
-    </div>
-  );
-}
-
-/* -------------------------------------------------------------------------- */
-/* Selected node                                                              */
-/* -------------------------------------------------------------------------- */
-
-type SelectedNodeDetailsProps = {
-  node: Node<SkillNodeData>;
-  onClose: () => void;
-};
-
-function SelectedNodeDetails({ node, onClose }: SelectedNodeDetailsProps) {
-  const data = node.data;
-
-  const statusStyles = {
-    known: 'border-emerald-100 bg-emerald-50 text-emerald-700',
-
-    bridge: 'border-indigo-100 bg-indigo-50 text-indigo-700',
-
-    missing: 'border-amber-100 bg-amber-50 text-amber-700',
-  };
-
-  const statusLabels = {
-    known: 'Known',
-    bridge: 'Learning path',
-    missing: 'Skill to develop',
-  };
-
-  return (
-    <div className='flex items-start justify-between gap-3 border-t border-zinc-100 bg-zinc-50/70 px-3.5 py-2.5 sm:gap-4 sm:px-4 sm:py-3'>
-      <div className='min-w-0'>
-        <div className='flex flex-wrap items-center gap-1.5 sm:gap-2'>
-          <p className='truncate text-sm font-semibold text-zinc-900'>
-            {data.name}
-          </p>
-
-          <span
-            className={`shrink-0 rounded-full border px-2 py-0.5 text-[9px] font-semibold ${statusStyles[data.status]}`}
-          >
-            {statusLabels[data.status]}
-          </span>
-        </div>
-
-        <div className='mt-1 flex min-w-0 flex-wrap items-center gap-1.5 text-[10px] text-zinc-500 sm:text-[11px]'>
-          <span className='truncate'>{data.category}</span>
-
-          <span className='shrink-0 text-zinc-300'>•</span>
-
-          <span className='shrink-0 capitalize'>{data.level}</span>
-        </div>
-
-        <p className='mt-1.5 line-clamp-2 text-[10px] leading-4 text-zinc-400 sm:text-[11px] sm:leading-5'>
-          Select connected nodes to explore the prerequisite relationship.
-        </p>
-      </div>
-
-      <button
-        type='button'
-        onClick={onClose}
-        aria-label='Clear selected skill'
-        className='flex size-7 shrink-0 items-center justify-center rounded-lg text-zinc-400 transition-colors hover:bg-zinc-200/70 hover:text-zinc-700'
-      >
-        <X className='size-3.5' />
-      </button>
-    </div>
-  );
-}
-
-/* -------------------------------------------------------------------------- */
-/* Empty graph                                                                */
-/* -------------------------------------------------------------------------- */
-
-function GraphEmptyState() {
-  return (
-    <div className='relative overflow-hidden rounded-xl border border-zinc-200 bg-white px-4 py-7 text-center shadow-[0_10px_30px_-24px_rgba(24,24,27,0.35)] sm:rounded-2xl sm:px-6 sm:py-8 lg:px-8 lg:py-10'>
-      <div
-        aria-hidden='true'
-        className='absolute left-1/2 top-0 size-36 -translate-x-1/2 -translate-y-1/2 rounded-full bg-indigo-50 blur-3xl sm:size-44'
-      />
-
-      <div className='relative'>
-        <div className='mx-auto flex size-10 items-center justify-center rounded-xl border border-indigo-100 bg-indigo-50 shadow-sm sm:size-11'>
-          <Route className='size-4.5 text-indigo-600 sm:size-5' />
-        </div>
-
-        <h4 className='mt-3.5 text-sm font-semibold text-zinc-900 sm:mt-4'>
-          No additional learning path needed
-        </h4>
-
-        <p className='mx-auto mt-2 max-w-md text-xs leading-5 text-zinc-500'>
-          SkillGraph did not find a prerequisite path from your selected skills
-          to the remaining requirements. This can also happen when you already
-          cover the relevant skills for this role.
-        </p>
-
-        <div className='mt-4 flex flex-wrap items-center justify-center gap-2.5 text-[9px] font-medium text-zinc-400 sm:mt-5 sm:gap-3 sm:text-[10px]'>
-          <span className='inline-flex items-center gap-1.5'>
-            <CheckCircle2 className='size-3 text-emerald-500' />
-            Known
-          </span>
-
-          <span className='inline-flex items-center gap-1.5'>
-            <GitBranch className='size-3 text-indigo-500' />
-            Prerequisites
-          </span>
-
-          <span className='inline-flex items-center gap-1.5'>
-            <Target className='size-3 text-amber-500' />
-            Target
-          </span>
-        </div>
-      </div>
     </div>
   );
 }

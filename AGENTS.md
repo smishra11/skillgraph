@@ -28,12 +28,33 @@ app/
 └── page.tsx
 
 components/
+├── analysis/
+│   ├── analysis-results.tsx
+│   ├── role-match-summary.tsx
+│   └── skill-coverage.tsx
+├── analyzer/
+│   ├── analysis-workspace.tsx
+│   ├── analyzer-hero.tsx
+│   ├── profile-panel.tsx
+│   └── workspace-empty-state.tsx
 ├── graph/
+│   ├── build-skill-graph.ts
+│   ├── graph-empty-state.tsx
+│   ├── selected-node-details.tsx
 │   ├── skill-graph.tsx
 │   └── skill-node.tsx
 ├── ui/
+│   ├── badge.tsx
+│   ├── button.tsx
+│   ├── card.tsx
+│   ├── command.tsx
+│   ├── dialog.tsx
+│   ├── input-group.tsx
+│   ├── input.tsx
+│   ├── popover.tsx
+│   ├── select.tsx
+│   └── textarea.tsx
 ├── analysis-form.tsx
-├── analysis-results.tsx
 ├── role-selector.tsx
 ├── skill-selector.tsx
 └── skillgraph-analyzer.tsx
