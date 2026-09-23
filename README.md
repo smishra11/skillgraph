@@ -383,63 +383,7 @@ I handle database failures at the API boundary. The underlying error is logged o
 
 ## Project Structure
 
-````text
-app/
-├── api/
-│   ├── analyze/route.ts
-│   ├── health/route.ts
-│   ├── learning-paths/route.ts
-│   ├── roles/route.ts
-│   ├── roles/[slug]/requirements/route.ts
-│   └── skills/route.ts
-├── globals.css
-├── layout.tsx
-└── page.tsx
-
-components/
-├── analysis/
-│   ├── analysis-results.tsx
-│   ├── role-match-summary.tsx
-│   └── skill-coverage.tsx
-├── analyzer/
-│   ├── analysis-workspace.tsx
-│   ├── analyzer-hero.tsx
-│   ├── profile-panel.tsx
-│   └── workspace-empty-state.tsx
-├── graph/
-│   ├── build-skill-graph.ts
-│   ├── graph-empty-state.tsx
-│   ├── selected-node-details.tsx
-│   ├── skill-graph.tsx
-│   └── skill-node.tsx
-├── role-selector.tsx
-├── skill-selector.tsx
-├── skillgraph-analyzer.tsx
-└── ui/
-	├── badge.tsx
-	├── button.tsx
-	├── card.tsx
-	├── command.tsx
-	├── dialog.tsx
-	├── input-group.tsx
-	├── input.tsx
-	├── popover.tsx
-	├── select.tsx
-	└── textarea.tsx
-
-lib/
-├── db/
-│   ├── driver.ts
-│   ├── queries.ts
-│   └── seed-data.ts
-└── utils.ts
-
-scripts/
-├── seed.ts
-├── verify-seed.ts
-└── verify## Project Structure
-
-```text
+````
 app/
 ├── api/
 │   ├── analyze/route.ts
